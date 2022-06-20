@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.2.32602.215
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "APBDproject.Server", "APBDproject\Server\APBDproject.Server.csproj", "{BADB2F57-CF48-4CE6-A8A1-4912D4A79798}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "APBDproject.Server", "APBDproject\Server\APBDproject.Server.csproj", "{BADB2F57-CF48-4CE6-A8A1-4912D4A79798}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "APBDproject.Client", "APBDproject\Client\APBDproject.Client.csproj", "{0143B877-6515-4748-B96A-464CFC41C3BD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "APBDproject.Client", "APBDproject\Client\APBDproject.Client.csproj", "{0143B877-6515-4748-B96A-464CFC41C3BD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "APBDproject.Shared", "APBDproject\Shared\APBDproject.Shared.csproj", "{6437A6FB-8F42-48FC-BDD3-60BA9C134363}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "APBDproject.Shared", "APBDproject\Shared\APBDproject.Shared.csproj", "{6437A6FB-8F42-48FC-BDD3-60BA9C134363}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

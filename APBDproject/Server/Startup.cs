@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Syncfusion.Blazor;
 using System.Linq;
 
 namespace APBDproject.Server
@@ -43,11 +44,14 @@ namespace APBDproject.Server
 
             services.AddControllersWithViews();
             services.AddRazorPages();
+
+            //services.AddSyncfusionBlazor();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("NjU5MzUwQDMyMzAyZTMxMmUzMGNZbXJYaVBPdDNWU0tQVEJqZEF6Q0ljcFhHdXJwbzViK3BNaFR0NG80Njg9");
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
