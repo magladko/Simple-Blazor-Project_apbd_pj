@@ -3,12 +3,14 @@
 
 <h3>Dashboard</h3>
 
+<LogoutButton />
+
 <div class="col-lg-12 control-section">
     <div class="control-wrapper">
         <label class="example-label">Company symbol</label>
         
-        <SfAutoComplete TValue="string" TItem="Ticker" Placeholder="Select a company" 
-            DataSource="@LocalData" PopupHeight="300px" PopupWidth="300px">
+        <SfAutoComplete TValue="string" TItem="Ticker" Placeholder="company symbol eg. AAPL" 
+            DataSource="@LocalData" PopupHeight="300px" PopupWidth="300px" @bind-Value="@AutoVal">
             
             <AutoCompleteTemplates TItem="Ticker">
                 <ItemTemplate>
@@ -24,17 +26,15 @@
             </AutoCompleteTemplates>
 
             <AutoCompleteFieldSettings Value="Symbol" />
-            @*<AutoCompleteFieldSettings Value="Name" />*@
         </SfAutoComplete>
-        
-        @*<SfMultiSelect TValue="string[]" TItem="Companies" Placeholder="e.g. TSLA" DataSource="@Company" AllowFiltering="true">
-            <MultiSelectFieldSettings Text="Name" Value="Code"></MultiSelectFieldSettings>
-        </SfMultiSelect>*@
     </div>
 </div>
 
+<h3>CHOOSE COMPANY</h3>
+
 @code {
     public List<Ticker> LocalData { get; set; }
+    public string AutoVal { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -42,7 +42,8 @@
         {
             new Ticker { Name = "Apple Inc.", Symbol = "AAPL" },
             new Ticker { Name = "Microsoft ...", Symbol = "MSFT" },
-            new Ticker { Name = "Google", Symbol = "GOOG" }
+            new Ticker { Name = "Google", Symbol = "GOOG" },
+            new Ticker { Name = "Gooogle", Symbol = "GOOOG" },
         };
         await base.OnInitializedAsync();
     }

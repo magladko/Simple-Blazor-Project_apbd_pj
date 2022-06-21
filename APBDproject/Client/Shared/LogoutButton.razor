@@ -1,0 +1,10 @@
+﻿@inject NavigationManager Navigation
+
+<button class="btn btn-primary" @onclick="@(()=>RedirectToLogout())">Logout</button>
+
+@code {
+    public void RedirectToLogout()
+    {
+        Navigation.NavigateTo($"identity/account/logout", true);
+    }
+}
