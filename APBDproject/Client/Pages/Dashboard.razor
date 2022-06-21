@@ -9,7 +9,22 @@
         
         <SfAutoComplete TValue="string" TItem="Ticker" Placeholder="Select a company" 
             DataSource="@LocalData" PopupHeight="300px" PopupWidth="300px">
-            <AutoCompleteFieldSettings Value="Name" />
+            
+            <AutoCompleteTemplates TItem="Ticker">
+                <ItemTemplate>
+                    <span>
+                        <span class='ac-symbol'>
+                            @((context as Ticker).Symbol)
+                        </span>
+                        <span class='ac-name'>
+                            @((context as Ticker).Name)
+                        </span>
+                    </span>
+                </ItemTemplate>
+            </AutoCompleteTemplates>
+
+            <AutoCompleteFieldSettings Value="Symbol" />
+            @*<AutoCompleteFieldSettings Value="Name" />*@
         </SfAutoComplete>
         
         @*<SfMultiSelect TValue="string[]" TItem="Companies" Placeholder="e.g. TSLA" DataSource="@Company" AllowFiltering="true">
@@ -19,5 +34,16 @@
 </div>
 
 @code {
+    public List<Ticker> LocalData { get; set; }
 
+    protected override async Task OnInitializedAsync()
+    {
+        LocalData = new List<Ticker>()
+        {
+            new Ticker { Name = "Apple Inc.", Symbol = "AAPL" },
+            new Ticker { Name = "Microsoft ...", Symbol = "MSFT" },
+            new Ticker { Name = "Google", Symbol = "GOOG" }
+        };
+        await base.OnInitializedAsync();
+    }
 }
