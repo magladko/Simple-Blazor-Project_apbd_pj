@@ -8,6 +8,10 @@ namespace APBDproject.Server.Models
 {
     public class ApplicationUser : IdentityUser
     {
+        public ApplicationUser()
+        {
+            Companies = new HashSet<Company>();
+        }
         public virtual ICollection<Company> Companies { get; set; }
     }
 }

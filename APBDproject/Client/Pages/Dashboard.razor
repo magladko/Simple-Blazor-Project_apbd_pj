@@ -1,50 +1,85 @@
-﻿@page "/dashboard"
+﻿@page "/dashboard/{SearchedTickerParam}"
 @attribute [Authorize]
+@inject HttpClient http
+@inject NavigationManager navigation
 
 <h3>Dashboard</h3>
 
+
+
 <LogoutButton />
 
-<div class="col-lg-12 control-section">
-    <div class="control-wrapper">
-        <label class="example-label">Company symbol</label>
-        
-        <SfAutoComplete TValue="string" TItem="Ticker" Placeholder="company symbol eg. AAPL" 
-            DataSource="@LocalData" PopupHeight="300px" PopupWidth="300px" @bind-Value="@AutoVal">
-            
-            <AutoCompleteTemplates TItem="Ticker">
-                <ItemTemplate>
-                    <span>
-                        <span class='ac-symbol'>
-                            @((context as Ticker).Symbol)
-                        </span>
-                        <span class='ac-name'>
-                            @((context as Ticker).Name)
-                        </span>
-                    </span>
-                </ItemTemplate>
-            </AutoCompleteTemplates>
+<TickerSearchbar OnSearchButtonClicked="SearchButtonClicked" />
 
-            <AutoCompleteFieldSettings Value="Symbol" />
-        </SfAutoComplete>
-    </div>
-</div>
+@*<StockChart OuterStockDetails="StockData" />*@
 
-<h3>CHOOSE COMPANY</h3>
+@if(StockData.Count() > 0)
+{
+    
+    <StockChart OuterStockDetails="StockData" />
+}
+else
+{
+    <img src="https://i.gifer.com/4V0b.gif" />
+}
+
 
 @code {
-    public List<Ticker> LocalData { get; set; }
-    public string AutoVal { get; set; }
+    [Parameter] public string SearchedTickerParam { get; set; }
+    public TickerModel SearchedTicker { get; set; }
+
+    public List<SingleOHLCDate> StockData { get; set; } = new List<SingleOHLCDate>();
 
     protected override async Task OnInitializedAsync()
     {
-        LocalData = new List<Ticker>()
+        await PopulateData();
+    }
+
+    public async Task PopulateData()
+    {
+        if (SearchedTickerParam == null)
         {
-            new Ticker { Name = "Apple Inc.", Symbol = "AAPL" },
-            new Ticker { Name = "Microsoft ...", Symbol = "MSFT" },
-            new Ticker { Name = "Google", Symbol = "GOOG" },
-            new Ticker { Name = "Gooogle", Symbol = "GOOOG" },
+            return;
+        }
+        StockData = new List<SingleOHLCDate>();
+
+        SearchedTicker = new TickerModel
+        {
+            Ticker = SearchedTickerParam,
+            Name = ""
         };
-        await base.OnInitializedAsync();
+
+        SingleOHLC[] data = await http.GetFromJsonAsync<SingleOHLC[]>($"api/tickers/stock/{SearchedTickerParam}");
+
+        StockData.AddRange(
+            data.Select(d => new SingleOHLCDate
+            {
+                T = UnixTimeStampToDateTime(d.T),
+                O = d.O,
+                H = d.H,
+                L = d.L,
+                C = d.C,
+                V = d.V
+            }).ToList());
+
+        StateHasChanged();
+
+        return;
+    }
+
+    public static DateTime UnixTimeStampToDateTime( double unixTimeStamp )
+    {
+        // Unix timestamp is seconds past epoch
+        DateTime dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+        dateTime = dateTime.AddMilliseconds( unixTimeStamp ).ToLocalTime();
+        return dateTime;
+    }
+
+    protected void SearchButtonClicked(TickerModel ticker)
+    {
+        if (ticker == null) return;
+        
+        navigation.NavigateTo($"/dashboard/{ticker.Ticker}");
+        PopulateData();
     }
 }

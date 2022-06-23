@@ -1,0 +1,19 @@
+﻿@page "/dashboard"
+@attribute [Authorize]
+@inject NavigationManager navigation
+
+<h3>Dashboard</h3>
+
+<LogoutButton />
+
+<TickerSearchbar OnSearchButtonClicked="SearchButtonClicked" />
+
+<h3>CHOOSE COMPANY</h3>
+
+
+@code {
+    protected void SearchButtonClicked(TickerModel ticker)
+    {
+        navigation.NavigateTo($"/dashboard/{ticker.Ticker}");
+    }
+}

@@ -1,4 +1,4 @@
-﻿using APBDproject.Shared;
+﻿using APBDproject.Shared.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;

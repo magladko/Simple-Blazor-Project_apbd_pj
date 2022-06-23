@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace APBDproject.Shared
+namespace APBDproject.Shared.Models
 {
     public class WeatherForecast
     {

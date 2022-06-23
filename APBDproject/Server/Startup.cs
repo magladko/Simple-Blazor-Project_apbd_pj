@@ -1,5 +1,6 @@
 using APBDproject.Server.Data;
 using APBDproject.Server.Models;
+using APBDproject.Server.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -42,10 +43,12 @@ namespace APBDproject.Server
             services.AddAuthentication()
                 .AddIdentityServerJwt();
 
+            services.AddScoped<ITickersService, PolygonTickersService>();
+
             services.AddControllersWithViews();
             services.AddRazorPages();
 
-            //services.AddSyncfusionBlazor();
+            services.AddSyncfusionBlazor();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

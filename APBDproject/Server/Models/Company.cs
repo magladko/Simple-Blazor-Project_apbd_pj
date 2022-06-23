@@ -4,7 +4,11 @@ namespace APBDproject.Server.Models
 {
     public class Company
     {
-        public int Id { get; set; }
+        public Company()
+        {
+            Users = new HashSet<ApplicationUser>();
+            Articles = new HashSet<Article>();
+        }
         public string Symbol { get; set; }
         public string Name { get; set; }
         public string Locale { get; set; }
@@ -13,5 +17,7 @@ namespace APBDproject.Server.Models
         public string HomepageUrl { get; set; }
 
         public virtual ICollection<ApplicationUser> Users { get; set; }
+        public virtual Daily Daily { get; set; }
+        public virtual ICollection<Article> Articles { get; set; }
     }
 }

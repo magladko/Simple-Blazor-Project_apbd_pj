@@ -1,0 +1,40 @@
+﻿@using Pages
+@using Syncfusion.Blazor.Data
+
+<div class="col-lg-12 control-section">
+    <div class="control-wrapper">
+        <label class="example-label">Company symbol</label><br />
+
+        <SfAutoComplete Width="50%" TValue="TickerModel" TItem="TickerModel" Placeholder="company symbol eg. AAPL" @bind-Value="@SearchedTicker">
+            <SfDataManager Url="api/tickers" Adaptor="Adaptors.WebApiAdaptor" CrossDomain="true" />
+            <AutoCompleteTemplates TItem="TickerModel">
+                <ItemTemplate>
+                    <div class="search-field">
+                        <span class='ac-symbol'>
+                            @((context as TickerModel).Ticker)
+                        </span>
+                        <span class='ac-name'>
+                            @((context as TickerModel).Name)
+                        </span>
+                    </div>
+                </ItemTemplate>
+            </AutoCompleteTemplates>
+            <AutoCompleteFieldSettings  Value="Ticker" />
+        </SfAutoComplete>
+        <button class="btn btn-primary" @onclick="SearchClicked">SEARCH</button>
+        
+    </div>
+</div>
+
+@code {
+
+    public TickerModel SearchedTicker { get; set; }
+    [Parameter]
+    public EventCallback<TickerModel> OnSearchButtonClicked { get; set; }
+
+    protected async Task SearchClicked()
+    {
+        await OnSearchButtonClicked.InvokeAsync(SearchedTicker);
+    }
+
+}

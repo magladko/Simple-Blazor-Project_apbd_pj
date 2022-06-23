@@ -1,0 +1,153 @@
+﻿@page "/bullshit"
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.Data
+@attribute [Authorize]
+@inject HttpClient http
+@inject NavigationManager navigation
+
+<h3>Dashboard</h3>
+
+<LogoutButton />
+
+@*<TickerSearchbar @bind-Value="@AutoVal" />*@
+
+<SfStockChart @ref="chart" Title="OHCL">
+    <StockChartCrosshairSettings Enable="true" LineType="LineType.Vertical"></StockChartCrosshairSettings>
+    <StockChartTooltipSettings Enable="true" Shared="true"></StockChartTooltipSettings>
+    <StockChartSeriesCollection>
+        <StockChartSeries DataSource="@StockDetails" Type="ChartSeriesType.Candle" XName="T" YName="C" High="H" Low="L" Open="O" Close="C" Volume="V" />
+    </StockChartSeriesCollection>
+</SfStockChart>
+
+<div class="col-lg-12 control-section">
+    <div class="control-wrapper">
+        <label class="example-label">Company symbol</label>
+
+        <SfAutoComplete  TValue="TickerModel" TItem="TickerModel" Placeholder="company symbol eg. AAPL" @bind-Value="@FormValue">
+            <SfDataManager Url="api/tickers" Adaptor="Adaptors.WebApiAdaptor" CrossDomain="true" />
+            <AutoCompleteTemplates TItem="TickerModel">
+                <ItemTemplate>
+                    <div>
+                        <span class='ac-symbol'>
+                            @((context as TickerModel).Ticker)
+                        </span>
+                        <span class='ac-name'>
+                            @((context as TickerModel).Name)
+                        </span>
+                    </div>
+                </ItemTemplate>
+            </AutoCompleteTemplates>
+            <AutoCompleteFieldSettings  Value="Ticker" />
+        </SfAutoComplete>
+        <SfButton class="btn btn-primary" @onclick="OnSearchSubmit">SEARCH</SfButton>
+        
+    </div>
+</div>
+
+@if (SearchedTicker == null)
+{
+    <h3>CHOOSE COMPANY</h3>
+}
+
+<SfStockChart @ref="chart" Title="OHCL">
+    <StockChartCrosshairSettings Enable="true" LineType="LineType.Vertical"></StockChartCrosshairSettings>
+    <StockChartTooltipSettings Enable="true" Shared="true"></StockChartTooltipSettings>
+    <StockChartSeriesCollection>
+        <StockChartSeries DataSource="@StockData" Type="ChartSeriesType.Candle" XName="T" YName="C" High="H" Low="L" Open="O" Close="C" Volume="V" />
+    </StockChartSeriesCollection>
+</SfStockChart>
+
+
+@*@if (SearchedTicker != null)
+{
+    @if (SearchedTicker.Name != null)
+    {
+        <p>@SearchedTicker.Name</p>
+    }
+    @if (SearchedTicker.Ticker != null)
+    {
+        <p> @SearchedTicker.Ticker</p>
+    }
+    <p>@StockData.Count()</p>
+
+    <ul>
+    @foreach (var item in StockData)
+    {
+        <li>@item.T</li>
+    }
+    </ul>
+}*@
+
+
+@code {
+    SfStockChart chart;
+
+    public class ChartData
+    {
+        public DateTime Date;
+        public Double Open;
+        public Double Low;
+        public Double Close;
+        public Double High;
+        public Double Volume;
+    }
+
+    public List<SingleOHLCDate> StockDetails = new List<SingleOHLCDate>
+    {
+         new SingleOHLCDate { T = new DateTime(2012, 04, 02), O= 85.9757, H = 90.6657,L = 85.7685, C = 90.5257,V = 660187068},
+         new SingleOHLCDate { T = new DateTime(2012, 04, 09), O= 89.4471, H = 92,L = 86.2157, C = 86.4614,V = 912634864},
+         new SingleOHLCDate { T = new DateTime(2012, 04, 16), O= 87.1514, H = 88.6071,L = 81.4885, C = 81.8543,V = 1221746066},
+         new SingleOHLCDate { T = new DateTime(2012, 04, 23), O= 81.5157, H = 88.2857,L = 79.2857, C = 86.1428,V = 965935749},
+         new SingleOHLCDate { T = new DateTime(2012, 04, 30), O= 85.4, H =  85.4857,L = 80.7385, C = 80.75,V = 615249365},
+         new SingleOHLCDate { T = new DateTime(2012, 05, 07), O= 80.2143, H = 82.2685,L = 79.8185, C = 80.9585,V = 541742692},
+         new SingleOHLCDate { T = new DateTime(2012, 05, 14), O= 80.3671, H = 81.0728,L = 74.5971, C = 75.7685,V = 708126233},
+         new SingleOHLCDate { T = new DateTime(2012, 05, 21), O= 76.3571, H = 82.3571,L = 76.2928, C = 80.3271,V = 682076215},
+         new SingleOHLCDate { T = new DateTime(2012, 05, 28), O= 81.5571, H = 83.0714,L = 80.0743, C = 80.1414,V = 480059584}
+   };
+
+    public List<TickerModel> LocalData { get; set; }
+
+    //[CascadingParameter]
+    public TickerModel FormValue { get; set; }
+
+    [Parameter] public TickerModel SearchedTicker { get; set; }
+
+    public List<SingleOHLCDate> StockData { get; set; } = new List<SingleOHLCDate>();
+
+    //public void SelectedTickerChanged(string tickerSymbol) => AutoVal = tickerSymbol;
+
+    public async void OnSearchSubmit()
+    {
+        //navigation.NavigateTo($"/dashboard/{FormValue}");
+
+
+        if (FormValue == null) return;
+        SearchedTicker = FormValue;
+        StockData = new List<SingleOHLCDate>();
+
+        SingleOHLC[] data = await http.GetFromJsonAsync<SingleOHLC[]>($"api/tickers/stock/{SearchedTicker.Ticker}");
+
+        StockData.AddRange(
+            data.Select(d => new SingleOHLCDate
+            {
+                T = UnixTimeStampToDateTime(d.T),
+                O = d.O,
+                H = d.H,
+                L = d.L,
+                C = d.C,
+                V = d.V
+            }).ToList());
+
+        chart.UpdateStockChart();
+        StateHasChanged();
+        chart.Refresh();
+    }
+
+    public static DateTime UnixTimeStampToDateTime( double unixTimeStamp )
+    {
+        // Unix timestamp is seconds past epoch
+        DateTime dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+        dateTime = dateTime.AddMilliseconds( unixTimeStamp ).ToLocalTime();
+        return dateTime;
+    }
+}
