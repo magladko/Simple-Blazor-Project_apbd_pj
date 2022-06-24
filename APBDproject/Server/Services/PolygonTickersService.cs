@@ -135,39 +135,49 @@ namespace APBDproject.Server.Services
             return result;
         }
 
-        public async Task<DailyDTO> GetDailyFromDbAsync(string symbol)
+        public async Task<Daily> GetDailyFromDbAsync(string symbol)
         {
             var result = await _context.Daily.Where(d => d.Symbol == symbol).OrderBy(d => d.From).FirstOrDefaultAsync();
 
             if (result == null) throw new Exception("No data received");
 
-            return new DailyDTO
-            {
-                From = result.From,
-                Symbol = result.Symbol,
-                Open = result.Open,
-                High = result.High,
-                Low = result.Low,
-                Close = result.Close,
-                Volume = result.Volume,
-                AfterHours = result.AfterHours,
-                PreMarket = result.PreMarket
-            };
+            return result;
+                
+            //    new DailyDTO
+            //{
+            //    From = result.From,
+            //    Symbol = result.Symbol,
+            //    Open = result.Open,
+            //    High = result.High,
+            //    Low = result.Low,
+            //    Close = result.Close,
+            //    Volume = result.Volume,
+            //    AfterHours = result.AfterHours,
+            //    PreMarket = result.PreMarket
+            //};
         }
 
         public async Task<MassiveCompanyDTO> GetTickerDetailsAsync(string symbol)
         {
-            var result = await http.GetFromJsonAsync<TickerDetailsV3DTO>($"https://api.polygon.io/v3/reference/tickers/{symbol}?apiKey={_polygonApiKey}");
+            MassiveCompanyDTO result;
 
-            if (result == null) result = await 
+            var resultDTO = await http.GetFromJsonAsync<TickerDetailsV3DTO>($"https://api.polygon.io/v3/reference/tickers/{symbol}?apiKey={_polygonApiKey}");
+
+            Company resultDb;
+            if (resultDTO == null) resultDb = await GetTickerDetailsFromDbAsync(symbol);
+
+
 
             throw new NotImplementedException();
         }
 
-        public Task<MassiveCompanyDTO> GetTickerDetailsFromDbAsync(string symbol)
+        public async Task<Company> GetTickerDetailsFromDbAsync(string symbol)
         {
+            var resultDb = await _context.Companies.Where(c => c.Symbol == symbol).SingleOrDefaultAsync();
 
-            throw new NotImplementedException();
+            if (resultDb == null) throw new Exception($"No such record with id {symbol}");
+
+            return resultDb;
         }
 
         public async Task<IEnumerable<ArticleDTO>> GetArticlesAsync(string symbol)
