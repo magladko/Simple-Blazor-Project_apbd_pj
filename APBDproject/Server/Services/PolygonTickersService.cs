@@ -167,7 +167,7 @@ namespace APBDproject.Server.Services
         {
             var result = await _context.Daily.Where(d => d.Symbol == symbol).OrderBy(d => d.From).FirstOrDefaultAsync();
 
-            if (result == null) throw new Exception($"No cached Daily data for {symbol}");
+            //if (result == null) throw new Exception($"No cached Daily data for {symbol}");
 
             return result;
         }
@@ -183,12 +183,12 @@ namespace APBDproject.Server.Services
                 var resultDb = await GetTickerDetailsFromDbAsync(symbol);
                 result = new MassiveCompanyDTO
                 {
-                    Symbol = resultDb.Symbol,
-                    Name = resultDb.Name,
-                    Locale = resultDb.Locale,
-                    SicDescription = resultDb.SicDescription,
-                    LogoUrl = resultDb.LogoUrl,
-                    HomepageUrl = resultDb.HomepageUrl
+                    Symbol = resultDb?.Symbol,
+                    Name = resultDb?.Name,
+                    Locale = resultDb?.Locale,
+                    SicDescription = resultDb?.SicDescription,
+                    LogoUrl = resultDb?.LogoUrl,
+                    HomepageUrl = resultDb?.HomepageUrl
                 };
             }
             else
@@ -214,7 +214,7 @@ namespace APBDproject.Server.Services
             // takes data with null fields!
             var resultDb = await _context.Companies.Where(c => c.Symbol == symbol).SingleOrDefaultAsync();
 
-            if (resultDb == null) throw new Exception($"No such record with id {symbol}");
+            //if (resultDb == null) throw new Exception($"No such record with id {symbol}");
 
             return resultDb;
         }
@@ -264,10 +264,10 @@ namespace APBDproject.Server.Services
                 result.AddRange(
                     resultDb.Select(a => new ArticleDTO
                     {
-                        Author = a.Author,
-                        Title = a.Title,
+                        Author = a?.Author,
+                        Title = a?.Title,
                         PublishedUtc = a.PublishedUtc,
-                        ArticleUrl = a.ArticleUrl
+                        ArticleUrl = a?.ArticleUrl
                     }).ToList());
             }
             else
@@ -307,7 +307,7 @@ namespace APBDproject.Server.Services
             var company = await _context.Companies.Where(c => c.Symbol == symbol).SingleOrDefaultAsync();
             var result = await _context.Articles.Where(a => a.Companies.Contains(company)).OrderBy(a => a.PublishedUtc).Take(limit).ToListAsync();
 
-            if (result == null) throw new Exception($"No cached articles for {symbol}");
+            //if (result == null) throw new Exception($"No cached articles for {symbol}");
 
             return result;
         }

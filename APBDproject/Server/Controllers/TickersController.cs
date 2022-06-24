@@ -59,7 +59,15 @@ namespace APBDproject.Server.Controllers
         [Route("details/{symbol}")]
         public async Task<MassiveCompanyDTO> GetCompanyDetailsAsync(string symbol, int articleLimit)
         {
-            throw new NotImplementedException();
+            try
+            {
+                return await _service.GetCompanyDetailsAndInfoAsync(symbol, articleLimit);
+            }
+            catch (Exception e)
+            {
+                System.Diagnostics.Debug.WriteLine(e.Message);
+                return null;
+            }
         }
     }
 }
