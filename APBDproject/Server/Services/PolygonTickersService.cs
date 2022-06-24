@@ -100,13 +100,23 @@ namespace APBDproject.Server.Services
             }            
         }
 
-        public async Task<MassiveCompanyDTO> GetCompanyDetailsAndInfoAsync(string symbol)
+        public async Task<MassiveCompanyDTO> GetCompanyDetailsAndInfoAsync(string symbol, int articlesLimit)
         {
             var daily = await GetDailyAsync(symbol);
             var ticker = await GetTickerDetailsAsync(symbol);
-            var articles = await GetArticlesAsync(symbol);
+            var articles = await GetArticlesAsync(symbol, articlesLimit);
 
-            throw new NotImplementedException();
+            return new MassiveCompanyDTO
+            {
+                Symbol = symbol,
+                Name = ticker?.Name,
+                Locale = ticker?.Locale,
+                SicDescription = ticker?.SicDescription,
+                LogoUrl = ticker?.LogoUrl,
+                HomepageUrl = ticker?.HomepageUrl,
+                Daily = daily,
+                Articles = articles
+            };
         }
 
         public async Task<DailyDTO> GetDailyAsync(string symbol)
@@ -133,6 +143,9 @@ namespace APBDproject.Server.Services
 
             if (!await _context.Daily.AnyAsync(d => d.From == DateTime.Today || d.From == DateTime.Today.AddDays(-1)))
             {
+                // TODO remove old Daily
+
+
                 _context.Daily.Add(new Daily
                 {
                     From = DateTime.Today,
@@ -147,7 +160,6 @@ namespace APBDproject.Server.Services
                 });
                 await _context.SaveChangesAsync();
             }
-
             return result;
         }
 
@@ -226,14 +238,7 @@ namespace APBDproject.Server.Services
             else
             {
                 _context.Companies.Update(companyDb);
-                
-                var temp = false;
-                if (companyDb.Name != company.Name)
-                { 
-                    companyDb.Name = company.Name;
-                    temp = true;
-                }
-                
+                if (companyDb.Name != company.Name) companyDb.Name = company.Name;
                 if (companyDb.Locale != company.Locale) companyDb.Locale = company.Locale;
                 if (companyDb.SicDescription != company.SicDescription) companyDb.SicDescription = company.SicDescription;
                 if (companyDb.LogoUrl != company.LogoUrl) companyDb.LogoUrl = company.LogoUrl;
@@ -247,14 +252,14 @@ namespace APBDproject.Server.Services
             await _context.SaveChangesAsync();
         }
 
-        public async Task<IEnumerable<ArticleDTO>> GetArticlesAsync(string symbol)
+        public async Task<ICollection<ArticleDTO>> GetArticlesAsync(string symbol, int limit)
         {
             List<ArticleDTO> result = new List<ArticleDTO>();
-            var resultDTO = await http.GetFromJsonAsync<GetPolygonArticlesDTO>($"https://api.polygon.io/v2/reference/news?ticker={symbol}&apiKey={_polygonApiKey}");
+            var resultDTO = await http.GetFromJsonAsync<GetPolygonArticlesDTO>($"https://api.polygon.io/v2/reference/news?ticker={symbol}&limit={limit}&apiKey={_polygonApiKey}");
 
             if (resultDTO == null)
             {
-                var resultDb = await GetArticlesFromDbAsync(symbol);
+                var resultDb = await GetArticlesFromDbAsync(symbol, limit);
 
                 result.AddRange(
                     resultDb.Select(a => new ArticleDTO
@@ -275,14 +280,36 @@ namespace APBDproject.Server.Services
                         PublishedUtc = DateTime.Parse(a.Published_utc),
                         ArticleUrl = a.Article_url
                     }).ToList());
+
+                foreach (var a in resultDTO.Results)
+                {
+                    if (!await _context.Articles.AnyAsync(art => art.Id == a.Id))
+                    {
+                        await _context.Articles.AddAsync(new Article
+                        {
+                            Id = a.Id,
+                            Author = a.Author,
+                            Title = a.Title,
+                            PublishedUtc = DateTime.Parse(a.Published_utc),
+                            ArticleUrl = a.Article_url
+                        });
+                    }
+                }
+
+                await _context.SaveChangesAsync();
             }
 
             return result;
         }
 
-        private Task<IEnumerable<Article>> GetArticlesFromDbAsync(string symbol)
+        private async Task<IEnumerable<Article>> GetArticlesFromDbAsync(string symbol, int limit)
         {
-            throw new NotImplementedException();
+            var company = await _context.Companies.Where(c => c.Symbol == symbol).SingleOrDefaultAsync();
+            var result = await _context.Articles.Where(a => a.Companies.Contains(company)).OrderBy(a => a.PublishedUtc).Take(limit).ToListAsync();
+
+            if (result == null) throw new Exception($"No cached articles for {symbol}");
+
+            return result;
         }
     }
 }

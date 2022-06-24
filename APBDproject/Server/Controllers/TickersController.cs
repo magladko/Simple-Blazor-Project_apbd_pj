@@ -1,5 +1,6 @@
 ﻿using APBDproject.Server.Services;
 using APBDproject.Shared.Models;
+using APBDproject.Shared.Models.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -52,6 +53,13 @@ namespace APBDproject.Server.Controllers
                 return null;
                 //return NotFound($"Company with symbol {symbol} does not exist in the database");
             }
+        }
+
+        [HttpGet]
+        [Route("details/{symbol}")]
+        public async Task<MassiveCompanyDTO> GetCompanyDetailsAsync(string symbol, int articleLimit)
+        {
+            throw new NotImplementedException();
         }
     }
 }
