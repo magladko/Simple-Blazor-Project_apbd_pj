@@ -43,7 +43,10 @@ namespace APBDproject.Server
             services.AddAuthentication()
                 .AddIdentityServerJwt();
 
+            services.AddHttpContextAccessor();
+
             services.AddScoped<ITickersService, PolygonTickersService>();
+            services.AddScoped<IWatchlistService, WatchlistService>();
 
             services.AddControllersWithViews();
             services.AddRazorPages();

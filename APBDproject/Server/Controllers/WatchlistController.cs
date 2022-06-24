@@ -1,44 +1,69 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using APBDproject.Server.Services;
+using APBDproject.Shared.Models.DTOs;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Collections.Generic;
+using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace APBDproject.Server.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class WatchlistController : ControllerBase
     {
         private readonly IWatchlistService _watchlistService;
-        public WatchlistController(IWatchlistService watchlistService)
+        private readonly IHttpContextAccessor _http;
+        public WatchlistController(IWatchlistService watchlistService, IHttpContextAccessor http)
         {
             _watchlistService = watchlistService;
+            _http = http;
         }
+        
         [HttpGet]
-        public IActionResult Get()
+        public async Task<IEnumerable<CompanyDTO>> GetWatchedCompaniesAsync()
         {
-            return Ok(_watchlistService.GetAll());
+            return await _watchlistService.GetWatchedCompaniesAync(GetUserId());
         }
-        [HttpGet("{id}")]
-        public IActionResult Get(int id)
-        {
-            return Ok(_watchlistService.Get(id));
-        }
+        
         [HttpPost]
-        public IActionResult Post(Watchlist watchlist)
+        public async Task<IActionResult> PostAsync([FromBody] string symbol)
         {
-            _watchlistService.Add(watchlist);
-            return Ok(watchlist);
+            try
+            {
+                await _watchlistService.AddCompanyToWatchlistAsync(GetUserId(), symbol);
+                return Ok();
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound();
+            }
+            catch (Exception)
+            {
+                return BadRequest();
+            }
         }
-        [HttpPut("{id}")]
-        public IActionResult Put(int id, Watchlist watchlist)
+
+        [HttpDelete]
+        public async Task<IActionResult> DeleteAsync([FromBody] string symbol)
         {
-            _watchlistService.Update(id, watchlist);
-            return Ok(watchlist);
+            try
+            {
+                await _watchlistService.RemoveCompanyFromWatchlistAsync(GetUserId(), symbol);
+                return Ok();
+            }
+            catch (Exception)
+            {
+                return BadRequest();
+            }
         }
-        [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
+
+        private string GetUserId()
         {
-            _watchlistService.Delete(id);
-            return Ok();
+            return _http.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier).Value;
         }
     }
 }
