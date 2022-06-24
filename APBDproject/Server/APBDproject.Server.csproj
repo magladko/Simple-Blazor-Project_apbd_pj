@@ -9,6 +9,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="5.0.15" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="5.0.2" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="Syncfusion.Blazor.Layouts" Version="20.1.0.61" />
     <PackageReference Include="Syncfusion.Blazor.StockChart" Version="20.1.0.61" />
     <PackageReference Include="Syncfusion.Blazor.Themes" Version="20.1.0.60" />
   </ItemGroup>

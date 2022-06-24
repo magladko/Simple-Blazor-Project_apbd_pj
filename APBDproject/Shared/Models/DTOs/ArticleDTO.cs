@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 
 namespace APBDproject.Shared.Models.DTOs
@@ -13,15 +14,16 @@ namespace APBDproject.Shared.Models.DTOs
 
     public class GetPolygonArticlesDTO
     {
-        public IEnumerable<GetPolygonArticleDTO> Results;
+        public IEnumerable<GetPolygonArticleDTO> results;
+        //public string status { get; set; }
     }
 
     public class GetPolygonArticleDTO
     {
-        public string Id { get; set; }
-        public string Title { get; set; }
-        public string Author { get; set; }
-        public string Published_utc { get; set; }
-        public string Article_url { get; set; }
+        public string id { get; set; }
+        public string title { get; set; }
+        public string author { get; set; }
+        public DateTime published_utc { get; set; }
+        public string article_url { get; set; }
     }
 }

@@ -121,7 +121,12 @@ namespace APBDproject.Server.Services
 
         public async Task<DailyDTO> GetDailyAsync(string symbol)
         {
-            var result = await http.GetFromJsonAsync<DailyDTO>($"https://api.polygon.io/v1/open-close/{symbol}/{DateTime.Today.ToString("yyyy-MM-dd")}?adjusted=true&apiKey={_polygonApiKey}");
+            DailyDTO result = null;
+            try
+            {
+                result = await http.GetFromJsonAsync<DailyDTO>($"https://api.polygon.io/v1/open-close/{symbol}/{DateTime.Today.AddDays(-1).ToString("yyyy-MM-dd")}?adjusted=true&apiKey={_polygonApiKey}");
+            }
+            catch (Exception) { }
 
             if (result == null)
             {
@@ -141,14 +146,14 @@ namespace APBDproject.Server.Services
             }
 
 
-            if (!await _context.Daily.AnyAsync(d => d.From == DateTime.Today || d.From == DateTime.Today.AddDays(-1)))
+            if (!await _context.Daily.AnyAsync(d => d.Symbol == symbol && d.From == DateTime.Today.AddDays(-1)))
             {
                 // TODO remove old Daily
 
 
                 _context.Daily.Add(new Daily
                 {
-                    From = DateTime.Today,
+                    From = DateTime.Today.AddDays(-1),
                     Symbol = symbol,
                     Open = result.Open,
                     High = result.High,
@@ -175,8 +180,12 @@ namespace APBDproject.Server.Services
         public async Task<MassiveCompanyDTO> GetTickerDetailsAsync(string symbol)
         {
             MassiveCompanyDTO result;
-
-            var resultDTO = await http.GetFromJsonAsync<TickerDetailsV3DTO>($"https://api.polygon.io/v3/reference/tickers/{symbol}?apiKey={_polygonApiKey}");
+            TickerDetailsV3DTO resultDTO = null;
+            try
+            {
+                resultDTO = (await http.GetFromJsonAsync<TickerDetailsV3DTOWrapper>($"https://api.polygon.io/v3/reference/tickers/{symbol}?apiKey={_polygonApiKey}")).Results;
+            }
+            catch (Exception) { }
 
             if (resultDTO == null)
             {
@@ -199,9 +208,11 @@ namespace APBDproject.Server.Services
                     Name = resultDTO.Name,
                     Locale = resultDTO.Locale,
                     SicDescription = resultDTO.Sic_description,
-                    HomepageUrl = resultDTO.branding.Logo_url,
-                    LogoUrl = resultDTO.Homepage_url
+                    LogoUrl = resultDTO.Branding.Logo_url,
+                    HomepageUrl = resultDTO.Homepage_url
                 };
+
+                result.LogoUrl += "?apiKey=" + (_polygonApiKey);
 
                 await PostTickerDetailsChangesToDbIfNew(result);
             }
@@ -255,7 +266,12 @@ namespace APBDproject.Server.Services
         public async Task<ICollection<ArticleDTO>> GetArticlesAsync(string symbol, int limit)
         {
             List<ArticleDTO> result = new List<ArticleDTO>();
-            var resultDTO = await http.GetFromJsonAsync<GetPolygonArticlesDTO>($"https://api.polygon.io/v2/reference/news?ticker={symbol}&limit={limit}&apiKey={_polygonApiKey}");
+            GetPolygonArticlesDTO resultDTO = null;
+            try
+            {
+                resultDTO = JObject.Parse(await http.GetStringAsync($"https://api.polygon.io/v2/reference/news?ticker={symbol}&limit={limit}&apiKey={_polygonApiKey}")).ToObject<GetPolygonArticlesDTO>();
+            }
+            catch (Exception) { }
 
             if (resultDTO == null)
             {
@@ -272,26 +288,46 @@ namespace APBDproject.Server.Services
             }
             else
             {
+                //foreach (var article in resultDTO.results)
+                //{
+                //    try
+                //    {
+                //        result.Add(new ArticleDTO
+                //        {
+                //            Author = article.author,
+                //            Title = article.title,
+                //            //PublishedUtc = DateTime.Parse(article.published_utc, null, System.Globalization.DateTimeStyles.RoundtripKind),
+                //            PublishedUtc = article.published_utc,
+                //            ArticleUrl = article.article_url
+                //        });
+                //    }
+                //    catch(Exception e)
+                //    {
+                //        System.Diagnostics.Debug.WriteLine(e.Message);
+                //    }
+                //}
+
                 result.AddRange(
-                    resultDTO.Results.Select(a => new ArticleDTO
+                    resultDTO.results.Select(a => new ArticleDTO
                     {
-                        Author = a.Author,
-                        Title = a.Title,
-                        PublishedUtc = DateTime.Parse(a.Published_utc),
-                        ArticleUrl = a.Article_url
+                        Author = a.author,
+                        Title = a.title,
+                        PublishedUtc = a.published_utc,
+                        ArticleUrl = a.article_url
                     }).ToList());
 
-                foreach (var a in resultDTO.Results)
+                foreach (var a in resultDTO.results)
                 {
-                    if (!await _context.Articles.AnyAsync(art => art.Id == a.Id))
+                    if (!await _context.Articles.AnyAsync(art => art.Id == a.id))
                     {
                         await _context.Articles.AddAsync(new Article
                         {
-                            Id = a.Id,
-                            Author = a.Author,
-                            Title = a.Title,
-                            PublishedUtc = DateTime.Parse(a.Published_utc),
-                            ArticleUrl = a.Article_url
+                            Id = a.id,
+                            Author = a.author,
+                            Title = a.title,
+                            //PublishedUtc = DateTime.Parse(a.published_utc),
+                            PublishedUtc = a.published_utc,
+                            ArticleUrl = a.article_url
                         });
                     }
                 }

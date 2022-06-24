@@ -41,17 +41,11 @@ namespace APBDproject.Server.Controllers
             {
                 var res = await _service.GetStockInfoAsync(symbol);
 
-                //foreach (var x in res) 
-                //    System.Diagnostics.Debug.WriteLine("TT " + x.T);
-
                 return res;
             }
             catch (Exception e)
             {
-                //Console.WriteLine("AAAAAAAAAAAAAAAAAAXXXXXXXXXXXXXXXXX");
-                //System.Diagnostics.Debug.WriteLine("XD " + e.Message);
                 return null;
-                //return NotFound($"Company with symbol {symbol} does not exist in the database");
             }
         }
 
@@ -60,7 +54,7 @@ namespace APBDproject.Server.Controllers
         public async Task<MassiveCompanyDTO> GetCompanyDetailsAsync(string symbol, int articleLimit)
         {
             try
-            {
+            { 
                 return await _service.GetCompanyDetailsAndInfoAsync(symbol, articleLimit);
             }
             catch (Exception e)

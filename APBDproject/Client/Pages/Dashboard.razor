@@ -3,17 +3,123 @@
 @inject HttpClient http
 @inject NavigationManager navigation
 
-<h3>Dashboard</h3>
 
+<div class="grid-container">
 
+    <div class="title"><h3>Dashboard</h3></div>
+    <div class="logout"><LogoutButton /></div>
 
-<LogoutButton />
+    <div class="search-bar"><TickerSearchbar OnSearchButtonClicked="SearchButtonClicked" /></div>
+    <div class="watch-list-btn"><button class="btn btn-primary" >WATCHLIST</button></div>
+    <div class="add-watch-list-btn" title="Add to watchlist"><button class="btn btn-primary" >+</button></div>
 
-<TickerSearchbar OnSearchButtonClicked="SearchButtonClicked" />
+    @if (CompanyDisplayInfo != null)
+    {
+        @*<div class="logo"><img src="@CompanyDisplayInfo.LogoUrl"></div>*@
+        <div class="name-symbol">@CompanyDisplayInfo.Name (@CompanyDisplayInfo.Symbol)</div>
+        <div class="locale">Locale: @CompanyDisplayInfo.Locale</div>
+        <div class="description">Description: @CompanyDisplayInfo.SicDescription</div>
+        <div class="home-url">Homepage: <a href="@CompanyDisplayInfo.HomepageUrl">@CompanyDisplayInfo.HomepageUrl</a></div>
+    }
+    else
+    {
+        <LoadingGif />
+    }
 
-@*<StockChart OuterStockDetails="StockData" />*@
+    <div class="stock-chart">
+        @if(StockData.Count() > 0)
+        {
+            <StockChart OuterStockDetails="StockData" />
+        }
+        else
+        {
+            <LoadingGif />
+        }
+    </div>
 
-@if(StockData.Count() > 0)
+    @if (CompanyDisplayInfo != null)
+    {
+        <div class="daily">
+            <p>From: @CompanyDisplayInfo.Daily.From</p>
+            <p>Ticker: @CompanyDisplayInfo.Daily.Symbol</p>        
+            <p>Open: @CompanyDisplayInfo.Daily.Open</p>
+            <p>High: @CompanyDisplayInfo.Daily.High</p>        
+            <p>Low: @CompanyDisplayInfo.Daily.Low</p>
+            <p>Close: @CompanyDisplayInfo.Daily.Close</p>
+            <p>Volume: @CompanyDisplayInfo.Daily.Volume</p>
+            <p>Afterhours: @CompanyDisplayInfo.Daily.AfterHours</p>
+            <p>Premarket: @CompanyDisplayInfo.Daily.PreMarket</p>
+        </div>
+
+        <div class="articles">
+            <h3>Last 5 articles</h3>
+            @foreach (var article in CompanyDisplayInfo.Articles)
+            {
+                <a href="@article.ArticleUrl">
+                    <div class="author-title">
+                        <p>@article.Author</p>
+                        <p>@article.Title</p>
+                    </div>
+                    <div class="article-date">
+                        <p>@article.PublishedUtc.Date</p>
+                    </div>
+                </a>
+            }
+        </div>
+    }
+    else
+    {
+        <LoadingGif />
+    }
+    
+
+</div>
+
+@*<SfTab>
+    <TabItems>
+        <TabItem>
+            <ChildContent>
+                <TabHeader Text="HTML"></TabHeader>
+            </ChildContent>
+            <ContentTemplate>
+                <div>
+                    @if (CompanyDisplayInfo != null)
+                    {
+                        <p><b>@CompanyDisplayInfo.Symbol</b></p>
+                        <p><b>@CompanyDisplayInfo.Name</b></p>
+                        <p><a href="@CompanyDisplayInfo.HomepageUrl"><b>@CompanyDisplayInfo.HomepageUrl</b></a></p>
+                        <p>@CompanyDisplayInfo.SicDescription</p>
+                    }
+                    else
+                    {
+                        <LoadingGif />
+                    }
+                </div>
+            </ContentTemplate>
+        </TabItem>
+        <TabItem>
+            <ChildContent>
+                <TabHeader Text="OHLC Chart"></TabHeader>
+            </ChildContent>
+            <ContentTemplate>
+                <div>
+                    @if(StockData.Count() > 0)
+                    {
+                        <StockChart OuterStockDetails="StockData" />
+                    }
+                    else
+                    {
+                        <LoadingGif />
+                    }
+                </div>
+            </ContentTemplate>
+        </TabItem>
+    </TabItems>
+</SfTab>*@
+
+@*<CompanyFullInfo />*@
+
+@*@if(StockData.Count() > 0)
 {
     
     <StockChart OuterStockDetails="StockData" />
@@ -21,7 +127,7 @@
 else
 {
     <img src="https://i.gifer.com/4V0b.gif" />
-}
+}*@
 
 
 @code {
@@ -29,6 +135,8 @@ else
     public TickerModel SearchedTicker { get; set; }
 
     public List<SingleOHLCDate> StockData { get; set; } = new List<SingleOHLCDate>();
+
+    public MassiveCompanyDTO CompanyDisplayInfo { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -51,21 +159,27 @@ else
 
         SingleOHLC[] data = await http.GetFromJsonAsync<SingleOHLC[]>($"api/tickers/stock/{SearchedTickerParam}");
 
-        StockData.AddRange(
-            data.Select(d => new SingleOHLCDate
-            {
-                T = UnixTimeStampToDateTime(d.T),
-                O = d.O,
-                H = d.H,
-                L = d.L,
-                C = d.C,
-                V = d.V
-            }).ToList());
+        StockData.AddRange(data.Select(d => new SingleOHLCDate
+        {
+            T = UnixTimeStampToDateTime(d.T),
+            O = d.O,
+            H = d.H,
+            L = d.L,
+            C = d.C,
+            V = d.V
+        }).ToList());
+
+        var test = await http.GetStringAsync($"api/tickers/details/{SearchedTickerParam}?articleLimit=5");
+
+        CompanyDisplayInfo = JObject.Parse(await http.GetStringAsync($"api/tickers/details/{SearchedTickerParam}?articleLimit=5")).ToObject<MassiveCompanyDTO>();
+
+        //CompanyDisplayInfo = await http.GetFromJsonAsync<MassiveCompanyDTO>($"api/tickers/details/{SearchedTickerParam}?articleLimit=5");
 
         StateHasChanged();
 
         return;
     }
+
 
     public static DateTime UnixTimeStampToDateTime( double unixTimeStamp )
     {
@@ -75,11 +189,11 @@ else
         return dateTime;
     }
 
-    protected void SearchButtonClicked(TickerModel ticker)
+    protected async void SearchButtonClicked(TickerModel ticker)
     {
         if (ticker == null) return;
         
         navigation.NavigateTo($"/dashboard/{ticker.Ticker}");
-        PopulateData();
+        await PopulateData();
     }
 }
