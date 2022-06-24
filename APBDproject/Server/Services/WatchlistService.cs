@@ -61,5 +61,13 @@ namespace APBDproject.Server.Services
             await _context.SaveChangesAsync();
             return true;
         }
+
+        public async Task<bool> IsOnWatchlistAsync(string userId, string symbol)
+        {
+            var user = await _context.Users.Where(u => u.Id == userId).SingleOrDefaultAsync();
+            if (user == null) return false;
+            var company = user.Companies.Where(c => c.Symbol == symbol).SingleOrDefault();
+            return company != null;
+        }
     }
 }

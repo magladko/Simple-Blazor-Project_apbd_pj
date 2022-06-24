@@ -10,8 +10,53 @@
     <div class="logout"><LogoutButton /></div>
 
     <div class="search-bar"><TickerSearchbar OnSearchButtonClicked="SearchButtonClicked" /></div>
-    <div class="watch-list-btn"><button class="btn btn-primary" >WATCHLIST</button></div>
-    <div class="add-watch-list-btn" title="Add to watchlist"><button class="btn btn-primary" >+</button></div>
+    <div class="watch-list-btn"><WatchlistButton /></div>
+    <div class="add-watch-list-btn" title="Add to watchlist">
+        @*<AddToWatchlistButton Symbol="@SearchedTickerParam" @ref="addToWatchlist" />*@
+
+        @if(OnList == null)
+        {
+            <button class="btn btn-primary" @onclick="@(()=>WatchlistAction())" disabled="true">...</button>
+        }
+        else if (OnList == true)
+        {
+            <button class="btn btn-primary" @onclick="@(()=>WatchlistAction())">-</button>
+        }
+        else
+        {
+            <button class="btn btn-primary" @onclick="@(()=>WatchlistAction())">+</button>
+        }
+        
+        @code{
+            public bool? OnList { get; set; } = null;
+
+            public async void WatchlistAction()
+            {
+                if (SearchedTickerParam == null) return;
+                var tempOnList = OnList;
+                OnList = null;
+                StateHasChanged();
+
+                if (tempOnList == false)
+                {
+                    var resp = await http.PostAsJsonAsync($"{navigation.BaseUri}api/watchlist", new { Symbol = SearchedTickerParam });
+                }
+                else
+                {
+                    var resp = await http.DeleteAsync($"api/watchlist/delete/{SearchedTickerParam}");
+                }
+                UpdateOnListParam();
+            }
+
+            protected async void UpdateOnListParam()
+            {
+                OnList = await http.GetFromJsonAsync<bool>($"api/watchlist/{SearchedTickerParam}");
+                System.Diagnostics.Debug.WriteLine(OnList);
+                StateHasChanged();
+            }
+        }
+        
+    </div>
 
     @if (CompanyDisplayInfo != null)
     {
@@ -19,7 +64,7 @@
         <div class="name-symbol">@CompanyDisplayInfo.Name (@CompanyDisplayInfo.Symbol)</div>
         <div class="locale">Locale: @CompanyDisplayInfo.Locale</div>
         <div class="description">Description: @CompanyDisplayInfo.SicDescription</div>
-        <div class="home-url">Homepage: <a href="@CompanyDisplayInfo.HomepageUrl">@CompanyDisplayInfo.HomepageUrl</a></div>
+        <div class="home-url">Homepage: <a href="@CompanyDisplayInfo.HomepageUrl" target=”_blank”>@CompanyDisplayInfo.HomepageUrl</a></div>
     }
     else
     {
@@ -75,60 +120,6 @@
 
 </div>
 
-@*<SfTab>
-    <TabItems>
-        <TabItem>
-            <ChildContent>
-                <TabHeader Text="HTML"></TabHeader>
-            </ChildContent>
-            <ContentTemplate>
-                <div>
-                    @if (CompanyDisplayInfo != null)
-                    {
-                        <p><b>@CompanyDisplayInfo.Symbol</b></p>
-                        <p><b>@CompanyDisplayInfo.Name</b></p>
-                        <p><a href="@CompanyDisplayInfo.HomepageUrl"><b>@CompanyDisplayInfo.HomepageUrl</b></a></p>
-                        <p>@CompanyDisplayInfo.SicDescription</p>
-                    }
-                    else
-                    {
-                        <LoadingGif />
-                    }
-                </div>
-            </ContentTemplate>
-        </TabItem>
-        <TabItem>
-            <ChildContent>
-                <TabHeader Text="OHLC Chart"></TabHeader>
-            </ChildContent>
-            <ContentTemplate>
-                <div>
-                    @if(StockData.Count() > 0)
-                    {
-                        <StockChart OuterStockDetails="StockData" />
-                    }
-                    else
-                    {
-                        <LoadingGif />
-                    }
-                </div>
-            </ContentTemplate>
-        </TabItem>
-    </TabItems>
-</SfTab>*@
-
-@*<CompanyFullInfo />*@
-
-@*@if(StockData.Count() > 0)
-{
-    
-    <StockChart OuterStockDetails="StockData" />
-}
-else
-{
-    <img src="https://i.gifer.com/4V0b.gif" />
-}*@
-
 
 @code {
     [Parameter] public string SearchedTickerParam { get; set; }
@@ -141,6 +132,7 @@ else
     protected override async Task OnInitializedAsync()
     {
         await PopulateData();
+        UpdateOnListParam();
     }
 
     public async Task PopulateData()
@@ -187,6 +179,13 @@ else
         DateTime dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
         dateTime = dateTime.AddMilliseconds( unixTimeStamp ).ToLocalTime();
         return dateTime;
+    }
+
+    protected AddToWatchlistButton addToWatchlist;
+
+    private void RefreshAddToWatchlistButton()
+    {
+        addToWatchlist.WatchlistAction();
     }
 
     protected async void SearchButtonClicked(TickerModel ticker)

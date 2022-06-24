@@ -1,0 +1,12 @@
+﻿@inject NavigationManager Navigation
+
+<button class="btn btn-primary" @onclick="@(()=>RedirectToWatchlist())">Watchlist</button>
+
+@code {
+    // TODO add remember last page
+
+    public void RedirectToWatchlist()
+    {
+        Navigation.NavigateTo($"watchlist");
+    }
+}

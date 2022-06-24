@@ -35,21 +35,27 @@ namespace APBDproject.Server.Services
         public async Task<IEnumerable<TickerModel>> GetSearchTickers(string likeSymbol)
         {
             TickerSearchResponseModel response;
-            
-            try
-            {
-                response = await http.GetFromJsonAsync<TickerSearchResponseModel>($"https://api.polygon.io/v3/reference/tickers?active=true&sort=ticker&order=asc&limit=0&search={likeSymbol}&apiKey={_polygonApiKey}"); //sIyt0ncaofyKgKHqqXHpYTSuVrxVyK_N
-                if (response == null) throw new Exception();
-                
-                var result = response.Results;
-                await PostAllNewSearchTickersDb(result);
-                return response.Results;
 
-            }
-            catch (Exception)
+            var resultDb = await GetSearchTickersFromDb(likeSymbol);
+
+            if (resultDb == null)
             {
-                return await GetSearchTickersFromDb(likeSymbol);
+                try
+                {
+                    response = await http.GetFromJsonAsync<TickerSearchResponseModel>($"https://api.polygon.io/v3/reference/tickers?active=true&sort=ticker&order=asc&limit=0&search={likeSymbol}&apiKey={_polygonApiKey}"); //sIyt0ncaofyKgKHqqXHpYTSuVrxVyK_N
+                    if (response == null) throw new Exception();
+                
+                    var result = response.Results;
+                    await PostAllNewSearchTickersDb(result);
+                    return response.Results;
+
+                }
+                catch (Exception)
+                {
+                    return null;
+                }
             }
+            return resultDb;
         }
 
         public async Task<IEnumerable<TickerModel>> GetSearchTickersFromDb(string likeSymbol)
@@ -190,6 +196,15 @@ namespace APBDproject.Server.Services
             if (resultDTO == null)
             {
                 var resultDb = await GetTickerDetailsFromDbAsync(symbol);
+
+                if (resultDb == null)
+                {
+
+                }
+                else
+                {
+
+                }
                 result = new MassiveCompanyDTO
                 {
                     Symbol = resultDb?.Symbol,
@@ -208,7 +223,7 @@ namespace APBDproject.Server.Services
                     Name = resultDTO.Name,
                     Locale = resultDTO.Locale,
                     SicDescription = resultDTO.Sic_description,
-                    LogoUrl = resultDTO.Branding.Logo_url,
+                    LogoUrl = resultDTO.Branding?.Logo_url,
                     HomepageUrl = resultDTO.Homepage_url
                 };
 

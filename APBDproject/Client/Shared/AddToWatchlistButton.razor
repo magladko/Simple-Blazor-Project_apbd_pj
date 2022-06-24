@@ -1,0 +1,48 @@
+﻿@inject HttpClient http
+
+@if(OnList == null)
+{
+    <button class="btn btn-primary" @onclick="@(()=>WatchlistAction())" disabled="true">...</button>
+}
+else if (OnList == true)
+{
+    <button class="btn btn-primary" @onclick="@(()=>WatchlistAction())">-</button>
+}
+else
+{
+    <button class="btn btn-primary" @onclick="@(()=>WatchlistAction())">+</button>
+}
+
+@code {
+    [Parameter] public string Symbol { get; set; }
+    public bool? OnList { get; set; } = null;
+
+    protected override Task OnInitializedAsync()
+    {
+        UpdateOnListParam();
+        return base.OnInitializedAsync();
+    }
+
+    public async void WatchlistAction()
+    {
+        if (Symbol == null) return;
+        var tempOnList = OnList;
+        OnList = null;
+        StateHasChanged();
+
+        if (tempOnList == false)
+        {
+            var resp = await http.PostAsJsonAsync("api/watchlist", new { Symbol = Symbol });
+        }
+        else
+        {
+            var resp = await http.DeleteAsync($"api/watchlist/delete/{Symbol}");
+        }
+        UpdateOnListParam();
+    }
+
+    protected async void UpdateOnListParam()
+    {
+        OnList = await http.GetFromJsonAsync<bool>($"api/watchlist/{Symbol}");
+    }
+}

@@ -1,5 +1,5 @@
-﻿@using Syncfusion.Blazor.Grids
-@page "/test"
+﻿@page "/watchlist"
+@inject NavigationManager Navigation
 
 @*<SfGrid @ref="DefaultGrid" DataSource="@Orders" AllowPaging="true" Height="200">
     <GridEvents OnLoad="Load" TValue="Order"></GridEvents>
@@ -11,8 +11,22 @@
         <GridColumn Field=@nameof(Order.Freight) HeaderText="Freight" Visible="false" Format="C2" TextAlign="TextAlign.Right" Width="120"></GridColumn>
     </GridColumns>
 </SfGrid>*@
-
+@*
 <SfGrid @ref="DefaultGrid" DataSource="@Companies" AllowPaging="true" AllowFiltering="true" AllowSorting="true" Height="500">
+    
+    <GridFilterSettings Type ="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+    <GridEvents OnLoad="Load" TValue="CompanyDTO"></GridEvents>
+    <GridPageSettings PageCount="4"></GridPageSettings>
+    <GridColumns>
+        <GridColumn Field=@nameof(CompanyDTO.Symbol) HeaderText="Symbol" TextAlign="TextAlign.Right" />
+        <GridColumn Field=@nameof(CompanyDTO.Name) HeaderText="Name" />
+        <GridColumn Field=@nameof(CompanyDTO.SicDescription) HeaderText="Description" Format="d" TextAlign="TextAlign.Left" />
+        <GridColumn Field=@nameof(CompanyDTO.Locale) HeaderText="Locale" Format="C2" TextAlign="TextAlign.Left"  />
+    </GridColumns>
+</SfGrid>*@
+
+<SfGrid @ref="DefaultGrid" TValue="CompanyDTO" AllowPaging="true" AllowFiltering="true" AllowSorting="true">
+    <SfDataManager Url=@(Navigation.BaseUri + "api/watchlist/all") Adaptor="Adaptors.WebApiAdaptor"></SfDataManager>
     <GridFilterSettings Type ="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
     <GridEvents OnLoad="Load" TValue="CompanyDTO"></GridEvents>
     <GridPageSettings PageCount="4"></GridPageSettings>
@@ -23,7 +37,6 @@
         <GridColumn Field=@nameof(CompanyDTO.Locale) HeaderText="Locale" Format="C2" TextAlign="TextAlign.Left"  />
     </GridColumns>
 </SfGrid>
-
 
 
 @code{

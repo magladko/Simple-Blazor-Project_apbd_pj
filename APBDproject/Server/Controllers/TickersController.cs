@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace APBDproject.Server.Controllers
 {
-    //[Authorize]
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class TickersController : ControllerBase
