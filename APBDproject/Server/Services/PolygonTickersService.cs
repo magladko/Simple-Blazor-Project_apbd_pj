@@ -85,7 +85,7 @@ namespace APBDproject.Server.Services
 
         public async Task<IEnumerable<SingleOHLC>> GetStockInfoAsync(string symbol)
         {
-            // TODO: fetch from DB
+            // TODO: fetch from DB (?)
 
             try
             {
@@ -102,9 +102,9 @@ namespace APBDproject.Server.Services
 
         public async Task<MassiveCompanyDTO> GetCompanyDetailsAndInfoAsync(string symbol)
         {
-            var daily = GetDailyAsync(symbol);
-            var ticker = GetTickerDetailsAsync(symbol);
-            var articles = GetArticlesAsync(symbol);
+            var daily = await GetDailyAsync(symbol);
+            var ticker = await GetTickerDetailsAsync(symbol);
+            var articles = await GetArticlesAsync(symbol);
 
             throw new NotImplementedException();
         }
@@ -113,9 +113,25 @@ namespace APBDproject.Server.Services
         {
             var result = await http.GetFromJsonAsync<DailyDTO>($"https://api.polygon.io/v1/open-close/{symbol}/{DateTime.Today.ToString("yyyy-MM-dd")}?adjusted=true&apiKey={_polygonApiKey}");
 
-            if (result == null) result = await GetDailyFromDbAsync(symbol);
+            if (result == null)
+            {
+                var resultDb = await GetDailyFromDbAsync(symbol);
+                result = new DailyDTO
+                {
+                    From = resultDb.From,
+                    Symbol = resultDb.Symbol,
+                    Open = resultDb.Open,
+                    High = resultDb.High,
+                    Low = resultDb.Low,
+                    Close = resultDb.Close,
+                    Volume = resultDb.Volume,
+                    AfterHours = resultDb.AfterHours,
+                    PreMarket = resultDb.PreMarket
+                };
+            }
 
-            if (!await _context.Daily.AnyAsync(d => d.From == DateTime.Today))
+
+            if (!await _context.Daily.AnyAsync(d => d.From == DateTime.Today || d.From == DateTime.Today.AddDays(-1)))
             {
                 _context.Daily.Add(new Daily
                 {
@@ -135,26 +151,13 @@ namespace APBDproject.Server.Services
             return result;
         }
 
-        public async Task<Daily> GetDailyFromDbAsync(string symbol)
+        private async Task<Daily> GetDailyFromDbAsync(string symbol)
         {
             var result = await _context.Daily.Where(d => d.Symbol == symbol).OrderBy(d => d.From).FirstOrDefaultAsync();
 
-            if (result == null) throw new Exception("No data received");
+            if (result == null) throw new Exception($"No cached Daily data for {symbol}");
 
             return result;
-                
-            //    new DailyDTO
-            //{
-            //    From = result.From,
-            //    Symbol = result.Symbol,
-            //    Open = result.Open,
-            //    High = result.High,
-            //    Low = result.Low,
-            //    Close = result.Close,
-            //    Volume = result.Volume,
-            //    AfterHours = result.AfterHours,
-            //    PreMarket = result.PreMarket
-            //};
         }
 
         public async Task<MassiveCompanyDTO> GetTickerDetailsAsync(string symbol)
@@ -163,16 +166,40 @@ namespace APBDproject.Server.Services
 
             var resultDTO = await http.GetFromJsonAsync<TickerDetailsV3DTO>($"https://api.polygon.io/v3/reference/tickers/{symbol}?apiKey={_polygonApiKey}");
 
-            Company resultDb;
-            if (resultDTO == null) resultDb = await GetTickerDetailsFromDbAsync(symbol);
+            if (resultDTO == null)
+            {
+                var resultDb = await GetTickerDetailsFromDbAsync(symbol);
+                result = new MassiveCompanyDTO
+                {
+                    Symbol = resultDb.Symbol,
+                    Name = resultDb.Name,
+                    Locale = resultDb.Locale,
+                    SicDescription = resultDb.SicDescription,
+                    LogoUrl = resultDb.LogoUrl,
+                    HomepageUrl = resultDb.HomepageUrl
+                };
+            }
+            else
+            {
+                result = new MassiveCompanyDTO
+                {
+                    Symbol = resultDTO.Ticker,
+                    Name = resultDTO.Name,
+                    Locale = resultDTO.Locale,
+                    SicDescription = resultDTO.Sic_description,
+                    HomepageUrl = resultDTO.branding.Logo_url,
+                    LogoUrl = resultDTO.Homepage_url
+                };
 
+                await PostTickerDetailsChangesToDbIfNew(result);
+            }
 
-
-            throw new NotImplementedException();
+            return result;
         }
 
-        public async Task<Company> GetTickerDetailsFromDbAsync(string symbol)
+        private async Task<Company> GetTickerDetailsFromDbAsync(string symbol)
         {
+            // takes data with null fields!
             var resultDb = await _context.Companies.Where(c => c.Symbol == symbol).SingleOrDefaultAsync();
 
             if (resultDb == null) throw new Exception($"No such record with id {symbol}");
@@ -180,7 +207,80 @@ namespace APBDproject.Server.Services
             return resultDb;
         }
 
+        private async Task PostTickerDetailsChangesToDbIfNew(MassiveCompanyDTO company)
+        {
+            var companyDb = await _context.Companies.Where(c => c.Symbol == company.Symbol).SingleOrDefaultAsync();
+            if (companyDb == null)
+            {
+                _context.Companies.Add(new Company
+                {
+                    Symbol = company.Symbol,
+                    Name = company.Name,
+                    Locale = company.Locale,
+                    SicDescription = company.SicDescription,
+                    LogoUrl = company.LogoUrl,
+                    HomepageUrl = company.HomepageUrl,
+                    LastUpdated = DateTime.Now
+                });
+            }
+            else
+            {
+                _context.Companies.Update(companyDb);
+                
+                var temp = false;
+                if (companyDb.Name != company.Name)
+                { 
+                    companyDb.Name = company.Name;
+                    temp = true;
+                }
+                
+                if (companyDb.Locale != company.Locale) companyDb.Locale = company.Locale;
+                if (companyDb.SicDescription != company.SicDescription) companyDb.SicDescription = company.SicDescription;
+                if (companyDb.LogoUrl != company.LogoUrl) companyDb.LogoUrl = company.LogoUrl;
+                if (companyDb.HomepageUrl != company.HomepageUrl) companyDb.HomepageUrl = company.HomepageUrl;
+
+                if (! (_context.Entry(companyDb).State == EntityState.Unchanged))
+                {
+                    companyDb.LastUpdated = DateTime.Now;
+                }
+            }
+            await _context.SaveChangesAsync();
+        }
+
         public async Task<IEnumerable<ArticleDTO>> GetArticlesAsync(string symbol)
+        {
+            List<ArticleDTO> result = new List<ArticleDTO>();
+            var resultDTO = await http.GetFromJsonAsync<GetPolygonArticlesDTO>($"https://api.polygon.io/v2/reference/news?ticker={symbol}&apiKey={_polygonApiKey}");
+
+            if (resultDTO == null)
+            {
+                var resultDb = await GetArticlesFromDbAsync(symbol);
+
+                result.AddRange(
+                    resultDb.Select(a => new ArticleDTO
+                    {
+                        Author = a.Author,
+                        Title = a.Title,
+                        PublishedUtc = a.PublishedUtc,
+                        ArticleUrl = a.ArticleUrl
+                    }).ToList());
+            }
+            else
+            {
+                result.AddRange(
+                    resultDTO.Results.Select(a => new ArticleDTO
+                    {
+                        Author = a.Author,
+                        Title = a.Title,
+                        PublishedUtc = DateTime.Parse(a.Published_utc),
+                        ArticleUrl = a.Article_url
+                    }).ToList());
+            }
+
+            return result;
+        }
+
+        private Task<IEnumerable<Article>> GetArticlesFromDbAsync(string symbol)
         {
             throw new NotImplementedException();
         }

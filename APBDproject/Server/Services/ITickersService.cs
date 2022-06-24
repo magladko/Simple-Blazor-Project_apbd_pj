@@ -1,4 +1,5 @@
-﻿using APBDproject.Shared.Models;
+﻿using APBDproject.Server.Models;
+using APBDproject.Shared.Models;
 using APBDproject.Shared.Models.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
@@ -14,9 +15,10 @@ namespace APBDproject.Server.Services
         public Task<IEnumerable<SingleOHLC>> GetStockInfoAsync(string symbol);
         public Task<MassiveCompanyDTO> GetCompanyDetailsAndInfoAsync(string symbol);
         public Task<DailyDTO> GetDailyAsync(string symbol);
-        public Task<DailyDTO> GetDailyFromDbAsync(string symbol);
+        //public Task<Daily> GetDailyFromDbAsync(string symbol);
         public Task<MassiveCompanyDTO> GetTickerDetailsAsync(string symbol);
-        public Task<MassiveCompanyDTO> GetTickerDetailsFromDbAsync(string symbol);
-        public Task<IEnumerable<ArticleDTO>> GetArticleAsync(string symbol);
+        //public Task<Company> GetTickerDetailsFromDbAsync(string symbol);
+        public Task<IEnumerable<ArticleDTO>> GetArticlesAsync(string symbol);
+        //public Task<IEnumerable<Article>> GetArticlesFromDbAsync(string symbol);
     }
 }
