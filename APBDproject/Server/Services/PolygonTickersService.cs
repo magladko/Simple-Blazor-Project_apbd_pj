@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Mvc;
 using APBDproject.Server.Models;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Linq;
+using APBDproject.Shared.Models.DTOs;
 
 namespace APBDproject.Server.Services
 {
@@ -88,22 +89,89 @@ namespace APBDproject.Server.Services
 
             try
             {
-                var result = await http.GetFromJsonAsync<TickerWithOHLCs>($"https://api.polygon.io/v2/aggs/ticker/{symbol}/range/1/day/{DateTime.Now.AddMonths(-3).ToString("yyyy-MM-dd")}/{DateTime.Now.ToString("yyyy-MM-dd")}?adjusted=true&sort=asc&limit=200&apiKey=sIyt0ncaofyKgKHqqXHpYTSuVrxVyK_N");
+                var result = await http.GetFromJsonAsync<TickerWithOHLCs>($"https://api.polygon.io/v2/aggs/ticker/{symbol}/range/1/day/{DateTime.Now.AddMonths(-3).ToString("yyyy-MM-dd")}/{DateTime.Now.ToString("yyyy-MM-dd")}?adjusted=true&sort=asc&limit=200&apiKey={_polygonApiKey}");
                 if (result == null) throw new Exception("No data received");
 
                 return result.Results;
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                var result = await GetStockInfoDbAsync(symbol);
-                if (result == null) throw e;
-                return result;
+                throw;
             }            
         }
 
-        public async Task<IEnumerable<SingleOHLC>> GetStockInfoDbAsync(string symbol)
+        public async Task<MassiveCompanyDTO> GetCompanyDetailsAndInfoAsync(string symbol)
         {
-            
+            var daily = GetDailyAsync(symbol);
+            var ticker = GetTickerDetailsAsync(symbol);
+            var articles = GetArticlesAsync(symbol);
+
+            throw new NotImplementedException();
+        }
+
+        public async Task<DailyDTO> GetDailyAsync(string symbol)
+        {
+            var result = await http.GetFromJsonAsync<DailyDTO>($"https://api.polygon.io/v1/open-close/{symbol}/{DateTime.Today.ToString("yyyy-MM-dd")}?adjusted=true&apiKey={_polygonApiKey}");
+
+            if (result == null) result = await GetDailyFromDbAsync(symbol);
+
+            if (!await _context.Daily.AnyAsync(d => d.From == DateTime.Today))
+            {
+                _context.Daily.Add(new Daily
+                {
+                    From = DateTime.Today,
+                    Symbol = symbol,
+                    Open = result.Open,
+                    High = result.High,
+                    Low = result.Low,
+                    Close = result.Close,
+                    Volume = result.Volume,
+                    AfterHours = result.AfterHours,
+                    PreMarket = result.PreMarket
+                });
+                await _context.SaveChangesAsync();
+            }
+
+            return result;
+        }
+
+        public async Task<DailyDTO> GetDailyFromDbAsync(string symbol)
+        {
+            var result = await _context.Daily.Where(d => d.Symbol == symbol).OrderBy(d => d.From).FirstOrDefaultAsync();
+
+            if (result == null) throw new Exception("No data received");
+
+            return new DailyDTO
+            {
+                From = result.From,
+                Symbol = result.Symbol,
+                Open = result.Open,
+                High = result.High,
+                Low = result.Low,
+                Close = result.Close,
+                Volume = result.Volume,
+                AfterHours = result.AfterHours,
+                PreMarket = result.PreMarket
+            };
+        }
+
+        public async Task<MassiveCompanyDTO> GetTickerDetailsAsync(string symbol)
+        {
+            var result = await http.GetFromJsonAsync<TickerDetailsV3DTO>($"https://api.polygon.io/v3/reference/tickers/{symbol}?apiKey={_polygonApiKey}");
+
+            if (result == null) result = await 
+
+            throw new NotImplementedException();
+        }
+
+        public Task<MassiveCompanyDTO> GetTickerDetailsFromDbAsync(string symbol)
+        {
+
+            throw new NotImplementedException();
+        }
+
+        public async Task<IEnumerable<ArticleDTO>> GetArticlesAsync(string symbol)
+        {
             throw new NotImplementedException();
         }
     }

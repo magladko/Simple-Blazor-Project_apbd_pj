@@ -1,4 +1,5 @@
 ﻿using APBDproject.Shared.Models;
+using APBDproject.Shared.Models.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -11,6 +12,11 @@ namespace APBDproject.Server.Services
         public Task<IEnumerable<TickerModel>> GetSearchTickersFromDb(string likeSymbol);
         public Task<bool> PostAllNewSearchTickersDb(IEnumerable<TickerModel> tickers);
         public Task<IEnumerable<SingleOHLC>> GetStockInfoAsync(string symbol);
-        public Task<IEnumerable<SingleOHLC>> GetStockInfoDbAsync(string symbol);
+        public Task<MassiveCompanyDTO> GetCompanyDetailsAndInfoAsync(string symbol);
+        public Task<DailyDTO> GetDailyAsync(string symbol);
+        public Task<DailyDTO> GetDailyFromDbAsync(string symbol);
+        public Task<MassiveCompanyDTO> GetTickerDetailsAsync(string symbol);
+        public Task<MassiveCompanyDTO> GetTickerDetailsFromDbAsync(string symbol);
+        public Task<IEnumerable<ArticleDTO>> GetArticleAsync(string symbol);
     }
 }

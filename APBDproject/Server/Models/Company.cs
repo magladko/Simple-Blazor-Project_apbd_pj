@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace APBDproject.Server.Models
 {
@@ -15,6 +16,7 @@ namespace APBDproject.Server.Models
         public string SicDescription { get; set; }
         public string LogoUrl { get; set; }
         public string HomepageUrl { get; set; }
+        public DateTime LastUpdated { get; set; }
 
         public virtual ICollection<ApplicationUser> Users { get; set; }
         public virtual Daily Daily { get; set; }
