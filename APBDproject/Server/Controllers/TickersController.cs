@@ -43,9 +43,10 @@ namespace APBDproject.Server.Controllers
 
                 return res;
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                return null;
+                //return null;
+                throw;
             }
         }
 

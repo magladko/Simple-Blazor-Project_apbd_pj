@@ -25,5 +25,6 @@ namespace APBDproject.Shared.Models.DTOs
         public string author { get; set; }
         public DateTime published_utc { get; set; }
         public string article_url { get; set; }
+        public IEnumerable<string> tickers { get; set; }
     }
 }

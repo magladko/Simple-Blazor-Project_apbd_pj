@@ -38,7 +38,7 @@ namespace APBDproject.Server.Services
 
             var resultDb = await GetSearchTickersFromDb(likeSymbol);
 
-            if (resultDb == null)
+            if (resultDb == null || resultDb.Count() == 0)
             {
                 try
                 {
@@ -137,25 +137,31 @@ namespace APBDproject.Server.Services
             if (result == null)
             {
                 var resultDb = await GetDailyFromDbAsync(symbol);
-                result = new DailyDTO
+
+                if (resultDb == null) result = new DailyDTO();
+                else
                 {
-                    From = resultDb.From,
-                    Symbol = resultDb.Symbol,
-                    Open = resultDb.Open,
-                    High = resultDb.High,
-                    Low = resultDb.Low,
-                    Close = resultDb.Close,
-                    Volume = resultDb.Volume,
-                    AfterHours = resultDb.AfterHours,
-                    PreMarket = resultDb.PreMarket
-                };
+                    result = new DailyDTO
+                    {
+                        From = resultDb.From,
+                        Symbol = resultDb.Symbol,
+                        Open = resultDb.Open,
+                        High = resultDb.High,
+                        Low = resultDb.Low,
+                        Close = resultDb.Close,
+                        Volume = resultDb.Volume,
+                        AfterHours = resultDb.AfterHours,
+                        PreMarket = resultDb.PreMarket
+                    };
+                }
             }
 
-
-            if (!await _context.Daily.AnyAsync(d => d.Symbol == symbol && d.From == DateTime.Today.AddDays(-1)))
+            var dailyDb = await _context.Daily.SingleOrDefaultAsync(d => d.Symbol == symbol); // && d.From == DateTime.Today.AddDays(-1)
+            if (dailyDb == null)
             {
                 // TODO remove old Daily
 
+                //_context.Update(result);
 
                 _context.Daily.Add(new Daily
                 {
@@ -169,6 +175,21 @@ namespace APBDproject.Server.Services
                     AfterHours = result.AfterHours,
                     PreMarket = result.PreMarket
                 });
+                await _context.SaveChangesAsync();
+            }
+            else if (dailyDb.From != DateTime.Today.AddDays(-1))
+            {
+                dailyDb.From = DateTime.Today.AddDays(-1);
+                dailyDb.Open = result.Open;
+                dailyDb.High = result.High;
+                dailyDb.Low = result.Low;
+                dailyDb.Close = result.Close;
+                dailyDb.Volume = result.Volume;
+                dailyDb.AfterHours = result.AfterHours;
+                dailyDb.PreMarket = result.PreMarket;
+
+                _context.Daily.Update(dailyDb);
+
                 await _context.SaveChangesAsync();
             }
             return result;
@@ -288,7 +309,7 @@ namespace APBDproject.Server.Services
             }
             catch (Exception) { }
 
-            if (resultDTO == null)
+            if (resultDTO == null || resultDTO.results.Count() == 0)
             {
                 var resultDb = await GetArticlesFromDbAsync(symbol, limit);
 
@@ -328,7 +349,7 @@ namespace APBDproject.Server.Services
                         Author = a.author,
                         Title = a.title,
                         PublishedUtc = a.published_utc,
-                        ArticleUrl = a.article_url
+                        ArticleUrl = a.article_url,
                     }).ToList());
 
                 foreach (var a in resultDTO.results)
@@ -342,12 +363,15 @@ namespace APBDproject.Server.Services
                             Title = a.title,
                             //PublishedUtc = DateTime.Parse(a.published_utc),
                             PublishedUtc = a.published_utc,
-                            ArticleUrl = a.article_url
+                            ArticleUrl = a.article_url,
+                            Companies = await _context.Companies.Where(c => a.tickers.Contains(c.Symbol)).ToListAsync()
                         });
                     }
                 }
 
                 await _context.SaveChangesAsync();
+
+                //_context.Companies.Where(c => c.Symbol == symbol).
             }
 
             return result;
@@ -356,7 +380,7 @@ namespace APBDproject.Server.Services
         private async Task<IEnumerable<Article>> GetArticlesFromDbAsync(string symbol, int limit)
         {
             var company = await _context.Companies.Where(c => c.Symbol == symbol).SingleOrDefaultAsync();
-            var result = await _context.Articles.Where(a => a.Companies.Contains(company)).OrderBy(a => a.PublishedUtc).Take(limit).ToListAsync();
+            var result = await _context.Articles.Include(a => a.Companies).Where(a => a.Companies.Contains(company)).OrderBy(a => a.PublishedUtc).Take(limit).ToListAsync();
 
             //if (result == null) throw new Exception($"No cached articles for {symbol}");
 

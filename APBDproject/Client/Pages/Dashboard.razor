@@ -11,51 +11,8 @@
 
     <div class="search-bar"><TickerSearchbar OnSearchButtonClicked="SearchButtonClicked" /></div>
     <div class="watch-list-btn"><WatchlistButton /></div>
-    <div class="add-watch-list-btn" title="Add to watchlist">
-        @*<AddToWatchlistButton Symbol="@SearchedTickerParam" @ref="addToWatchlist" />*@
-
-        @if(OnList == null)
-        {
-            <button class="btn btn-primary" @onclick="@(()=>WatchlistAction())" disabled="true">...</button>
-        }
-        else if (OnList == true)
-        {
-            <button class="btn btn-primary" @onclick="@(()=>WatchlistAction())">-</button>
-        }
-        else
-        {
-            <button class="btn btn-primary" @onclick="@(()=>WatchlistAction())">+</button>
-        }
-        
-        @code{
-            public bool? OnList { get; set; } = null;
-
-            public async void WatchlistAction()
-            {
-                if (SearchedTickerParam == null) return;
-                var tempOnList = OnList;
-                OnList = null;
-                StateHasChanged();
-
-                if (tempOnList == false)
-                {
-                    var resp = await http.PostAsJsonAsync($"{navigation.BaseUri}api/watchlist", new { Symbol = SearchedTickerParam });
-                }
-                else
-                {
-                    var resp = await http.DeleteAsync($"api/watchlist/delete/{SearchedTickerParam}");
-                }
-                UpdateOnListParam();
-            }
-
-            protected async void UpdateOnListParam()
-            {
-                OnList = await http.GetFromJsonAsync<bool>($"api/watchlist/{SearchedTickerParam}");
-                System.Diagnostics.Debug.WriteLine(OnList);
-                StateHasChanged();
-            }
-        }
-        
+    <div class="add-watch-list-btn">
+        <AddToWatchlistButton Symbol="@SearchedTickerParam" @ref="addToWatchlist" />
     </div>
 
     @if (CompanyDisplayInfo != null)
@@ -76,9 +33,13 @@
         {
             <StockChart OuterStockDetails="StockData" />
         }
-        else
+        else if (!FailedToLoadChartData)
         {
             <LoadingGif />
+        }
+        else
+        {
+            <p>Couldn't load chart data, search again.</p>
         }
     </div>
 
@@ -106,7 +67,7 @@
                         <p>@article.Title</p>
                     </div>
                     <div class="article-date">
-                        <p>@article.PublishedUtc.Date</p>
+                        <p>@article.PublishedUtc.ToString("dd-MM-yyyy")</p>
                     </div>
                 </a>
             }
@@ -126,13 +87,14 @@
     public TickerModel SearchedTicker { get; set; }
 
     public List<SingleOHLCDate> StockData { get; set; } = new List<SingleOHLCDate>();
+    public bool FailedToLoadChartData { get; set; } = false;
 
     public MassiveCompanyDTO CompanyDisplayInfo { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
         await PopulateData();
-        UpdateOnListParam();
+        //UpdateOnListParam();
     }
 
     public async Task PopulateData()
@@ -149,19 +111,27 @@
             Name = ""
         };
 
-        SingleOHLC[] data = await http.GetFromJsonAsync<SingleOHLC[]>($"api/tickers/stock/{SearchedTickerParam}");
-
-        StockData.AddRange(data.Select(d => new SingleOHLCDate
+        try
         {
-            T = UnixTimeStampToDateTime(d.T),
-            O = d.O,
-            H = d.H,
-            L = d.L,
-            C = d.C,
-            V = d.V
-        }).ToList());
+            FailedToLoadChartData = false;
+            SingleOHLC[] data = await http.GetFromJsonAsync<SingleOHLC[]>($"api/tickers/stock/{SearchedTickerParam}");
+            StockData.AddRange(data.Select(d => new SingleOHLCDate
+            {
+                T = UnixTimeStampToDateTime(d.T),
+                O = d.O,
+                H = d.H,
+                L = d.L,
+                C = d.C,
+                V = d.V
+            }).ToList());
+        }
+        catch (Exception)
+        {
+            FailedToLoadChartData = true;
+        }
 
-        var test = await http.GetStringAsync($"api/tickers/details/{SearchedTickerParam}?articleLimit=5");
+
+        //var test = await http.GetStringAsync($"api/tickers/details/{SearchedTickerParam}?articleLimit=5");
 
         CompanyDisplayInfo = JObject.Parse(await http.GetStringAsync($"api/tickers/details/{SearchedTickerParam}?articleLimit=5")).ToObject<MassiveCompanyDTO>();
 
@@ -191,8 +161,9 @@
     protected async void SearchButtonClicked(TickerModel ticker)
     {
         if (ticker == null) return;
-        
+
         navigation.NavigateTo($"/dashboard/{ticker.Ticker}");
         await PopulateData();
+        RefreshAddToWatchlistButton();
     }
 }

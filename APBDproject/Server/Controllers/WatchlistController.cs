@@ -25,23 +25,44 @@ namespace APBDproject.Server.Controllers
         }
 
         [HttpGet]
-        [Route("{symbol}")]
-        public async Task<bool> IsOnWatchlist(string symbol)
+        public async Task<object> Get()
         {
-            return await _watchlistService.IsOnWatchlistAsync(GetUserId(), symbol);
+            return await GetWatchedCompaniesToGridAsync();
+        }
+
+        [HttpGet("{id}", Name = "Get")]
+        public string Get(int id)
+        {
+            return "value";
+        }
+
+        [HttpDelete("{id}")]
+        public async Task Delete(string id)
+        {
+            await DeleteAsync(id);
         }
 
         [HttpGet]
-        public async Task<IEnumerable<CompanyDTO>> GetWatchedCompaniesAsync()
+        [Route("isonlist/{symbol}")]
+        public async Task<bool> IsOnWatchlist(string symbol)
         {
-            return await _watchlistService.GetWatchedCompaniesAync(GetUserId());
+            //var id = GetUserId() == null ? "03119793-458e-46bf-a3ae-4f531567e698" : GetUserId(); // TODO: DELETE!
+            return await _watchlistService.IsOnWatchlistAsync(GetUserId(), symbol);
         }
+
+        //[HttpGet]
+        //[Route("getall")]
+        //public async Task<IEnumerable<CompanyDTO>> GetWatchedCompaniesAsync()
+        //{
+        //    //var id = GetUserId() == null ? "03119793-458e-46bf-a3ae-4f531567e698" : GetUserId(); // TODO: DELETE!
+        //    return await _watchlistService.GetWatchedCompaniesAync(GetUserId());
+        //}
 
         [HttpGet]
         [Route("all")]
         public async Task<WatchedCompaniesDTO> GetWatchedCompaniesToGridAsync()
         {
-            var res = await GetWatchedCompaniesAsync();
+            var res = await _watchlistService.GetWatchedCompaniesAync(GetUserId()); ;
             return new WatchedCompaniesDTO
             {
                 Items = res,
@@ -50,12 +71,13 @@ namespace APBDproject.Server.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> PostAsync([FromBody] string symbol)
+        public async Task<IActionResult> PostAsync([FromBody] PostTickerDTO symbol)
         {
             try
             {
-                await _watchlistService.AddCompanyToWatchlistAsync(GetUserId(), symbol);
-                System.Diagnostics.Debug.WriteLine(GetUserId() + " AAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+                //var id = GetUserId() == null ? "03119793-458e-46bf-a3ae-4f531567e698" : GetUserId();
+                await _watchlistService.AddCompanyToWatchlistAsync(GetUserId(), symbol.Symbol);
+                //System.Diagnostics.Debug.WriteLine(GetUserId() + " AAAAAAAAAAAAAAAAAAAAAAAAAAAA");
                 return Ok();
             }
             catch (KeyNotFoundException)
@@ -74,6 +96,7 @@ namespace APBDproject.Server.Controllers
         {
             try
             {
+                //var id = GetUserId() == null ? "03119793-458e-46bf-a3ae-4f531567e698" : GetUserId(); // TODO: DELETE!
                 await _watchlistService.RemoveCompanyFromWatchlistAsync(GetUserId(), symbol);
                 return Ok();
             }

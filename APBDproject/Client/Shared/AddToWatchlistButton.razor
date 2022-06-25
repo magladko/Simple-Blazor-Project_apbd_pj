@@ -2,18 +2,18 @@
 
 @if(OnList == null)
 {
-    <button class="btn btn-primary" @onclick="@(()=>WatchlistAction())" disabled="true">...</button>
+    <button class="btn btn-primary" disabled>...</button>
 }
 else if (OnList == true)
 {
-    <button class="btn btn-primary" @onclick="@(()=>WatchlistAction())">-</button>
+    <button class="btn btn-primary" title="Remove from watchlist" @onclick="@(()=>WatchlistAction())">-</button>
 }
 else
 {
-    <button class="btn btn-primary" @onclick="@(()=>WatchlistAction())">+</button>
+    <button class="btn btn-primary" title="Add to watchlist" @onclick="@(()=>WatchlistAction())">+</button>
 }
-
-@code {
+        
+@code{
     [Parameter] public string Symbol { get; set; }
     public bool? OnList { get; set; } = null;
 
@@ -32,7 +32,7 @@ else
 
         if (tempOnList == false)
         {
-            var resp = await http.PostAsJsonAsync("api/watchlist", new { Symbol = Symbol });
+            var resp = await http.PostAsJsonAsync($"api/watchlist", new { Symbol = Symbol });
         }
         else
         {
@@ -43,6 +43,8 @@ else
 
     protected async void UpdateOnListParam()
     {
-        OnList = await http.GetFromJsonAsync<bool>($"api/watchlist/{Symbol}");
+        OnList = await http.GetFromJsonAsync<bool>($"api/watchlist/isonlist/{Symbol}");
+        //System.Diagnostics.Debug.WriteLine(OnList);
+        StateHasChanged();
     }
 }

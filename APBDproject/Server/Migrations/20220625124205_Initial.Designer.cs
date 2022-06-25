@@ -7,11 +7,11 @@ using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
-namespace APBDproject.Server.Data.Migrations
+namespace APBDproject.Server.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20220622123441_Companies")]
-    partial class Companies
+    [Migration("20220625124205_Initial")]
+    partial class Initial
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -86,6 +86,31 @@ namespace APBDproject.Server.Data.Migrations
                     b.ToTable("AspNetUsers");
                 });
 
+            modelBuilder.Entity("APBDproject.Server.Models.Article", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("ArticleUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Author")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("PublishedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Articles");
+                });
+
             modelBuilder.Entity("APBDproject.Server.Models.Company", b =>
                 {
                     b.Property<string>("Symbol")
@@ -93,6 +118,9 @@ namespace APBDproject.Server.Data.Migrations
 
                     b.Property<string>("HomepageUrl")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("LastUpdated")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("Locale")
                         .HasColumnType("nvarchar(max)");
@@ -112,6 +140,49 @@ namespace APBDproject.Server.Data.Migrations
                     b.ToTable("Companies");
                 });
 
+            modelBuilder.Entity("APBDproject.Server.Models.Daily", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<double>("AfterHours")
+                        .HasColumnType("float");
+
+                    b.Property<double>("Close")
+                        .HasColumnType("float");
+
+                    b.Property<DateTime>("From")
+                        .HasColumnType("datetime2");
+
+                    b.Property<double>("High")
+                        .HasColumnType("float");
+
+                    b.Property<double>("Low")
+                        .HasColumnType("float");
+
+                    b.Property<double>("Open")
+                        .HasColumnType("float");
+
+                    b.Property<double>("PreMarket")
+                        .HasColumnType("float");
+
+                    b.Property<string>("Symbol")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<double>("Volume")
+                        .HasColumnType("float");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Symbol")
+                        .IsUnique();
+
+                    b.ToTable("Daily");
+                });
+
             modelBuilder.Entity("ApplicationUserCompany", b =>
                 {
                     b.Property<string>("CompaniesSymbol")
@@ -125,6 +196,21 @@ namespace APBDproject.Server.Data.Migrations
                     b.HasIndex("UsersId");
 
                     b.ToTable("ApplicationUserCompany");
+                });
+
+            modelBuilder.Entity("ArticleCompany", b =>
+                {
+                    b.Property<string>("ArticlesId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("CompaniesSymbol")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("ArticlesId", "CompaniesSymbol");
+
+                    b.HasIndex("CompaniesSymbol");
+
+                    b.ToTable("ArticleCompany");
                 });
 
             modelBuilder.Entity("IdentityServer4.EntityFramework.Entities.DeviceFlowCodes", b =>
@@ -365,6 +451,17 @@ namespace APBDproject.Server.Data.Migrations
                     b.ToTable("AspNetUserTokens");
                 });
 
+            modelBuilder.Entity("APBDproject.Server.Models.Daily", b =>
+                {
+                    b.HasOne("APBDproject.Server.Models.Company", "Company")
+                        .WithOne("Daily")
+                        .HasForeignKey("APBDproject.Server.Models.Daily", "Symbol")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Company");
+                });
+
             modelBuilder.Entity("ApplicationUserCompany", b =>
                 {
                     b.HasOne("APBDproject.Server.Models.Company", null)
@@ -376,6 +473,21 @@ namespace APBDproject.Server.Data.Migrations
                     b.HasOne("APBDproject.Server.Models.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UsersId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ArticleCompany", b =>
+                {
+                    b.HasOne("APBDproject.Server.Models.Article", null)
+                        .WithMany()
+                        .HasForeignKey("ArticlesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("APBDproject.Server.Models.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompaniesSymbol")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -429,6 +541,11 @@ namespace APBDproject.Server.Data.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("APBDproject.Server.Models.Company", b =>
+                {
+                    b.Navigation("Daily");
                 });
 #pragma warning restore 612, 618
         }

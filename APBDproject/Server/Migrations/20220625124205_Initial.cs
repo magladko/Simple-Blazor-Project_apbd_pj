@@ -1,12 +1,27 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
-using System;
+﻿using System;
+using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace APBDproject.Server.Data.Migrations
+namespace APBDproject.Server.Migrations
 {
-    public partial class CreateIdentitySchema : Migration
+    public partial class Initial : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.CreateTable(
+                name: "Articles",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Author = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Title = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    PublishedUtc = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ArticleUrl = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Articles", x => x.Id);
+                });
+
             migrationBuilder.CreateTable(
                 name: "AspNetRoles",
                 columns: table => new
@@ -44,6 +59,23 @@ namespace APBDproject.Server.Data.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_AspNetUsers", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Companies",
+                columns: table => new
+                {
+                    Symbol = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Locale = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    SicDescription = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    LogoUrl = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    HomepageUrl = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    LastUpdated = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Companies", x => x.Symbol);
                 });
 
             migrationBuilder.CreateTable(
@@ -191,6 +223,91 @@ namespace APBDproject.Server.Data.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "ApplicationUserCompany",
+                columns: table => new
+                {
+                    CompaniesSymbol = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    UsersId = table.Column<string>(type: "nvarchar(450)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ApplicationUserCompany", x => new { x.CompaniesSymbol, x.UsersId });
+                    table.ForeignKey(
+                        name: "FK_ApplicationUserCompany_AspNetUsers_UsersId",
+                        column: x => x.UsersId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ApplicationUserCompany_Companies_CompaniesSymbol",
+                        column: x => x.CompaniesSymbol,
+                        principalTable: "Companies",
+                        principalColumn: "Symbol",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ArticleCompany",
+                columns: table => new
+                {
+                    ArticlesId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    CompaniesSymbol = table.Column<string>(type: "nvarchar(450)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ArticleCompany", x => new { x.ArticlesId, x.CompaniesSymbol });
+                    table.ForeignKey(
+                        name: "FK_ArticleCompany_Articles_ArticlesId",
+                        column: x => x.ArticlesId,
+                        principalTable: "Articles",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ArticleCompany_Companies_CompaniesSymbol",
+                        column: x => x.CompaniesSymbol,
+                        principalTable: "Companies",
+                        principalColumn: "Symbol",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Daily",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    From = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Symbol = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Open = table.Column<double>(type: "float", nullable: false),
+                    High = table.Column<double>(type: "float", nullable: false),
+                    Low = table.Column<double>(type: "float", nullable: false),
+                    Close = table.Column<double>(type: "float", nullable: false),
+                    Volume = table.Column<double>(type: "float", nullable: false),
+                    AfterHours = table.Column<double>(type: "float", nullable: false),
+                    PreMarket = table.Column<double>(type: "float", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Daily", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Daily_Companies_Symbol",
+                        column: x => x.Symbol,
+                        principalTable: "Companies",
+                        principalColumn: "Symbol",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ApplicationUserCompany_UsersId",
+                table: "ApplicationUserCompany",
+                column: "UsersId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ArticleCompany_CompaniesSymbol",
+                table: "ArticleCompany",
+                column: "CompaniesSymbol");
+
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetRoleClaims_RoleId",
                 table: "AspNetRoleClaims",
@@ -231,6 +348,12 @@ namespace APBDproject.Server.Data.Migrations
                 filter: "[NormalizedUserName] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Daily_Symbol",
+                table: "Daily",
+                column: "Symbol",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_DeviceCodes_DeviceCode",
                 table: "DeviceCodes",
                 column: "DeviceCode",
@@ -260,6 +383,12 @@ namespace APBDproject.Server.Data.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
+                name: "ApplicationUserCompany");
+
+            migrationBuilder.DropTable(
+                name: "ArticleCompany");
+
+            migrationBuilder.DropTable(
                 name: "AspNetRoleClaims");
 
             migrationBuilder.DropTable(
@@ -275,16 +404,25 @@ namespace APBDproject.Server.Data.Migrations
                 name: "AspNetUserTokens");
 
             migrationBuilder.DropTable(
+                name: "Daily");
+
+            migrationBuilder.DropTable(
                 name: "DeviceCodes");
 
             migrationBuilder.DropTable(
                 name: "PersistedGrants");
 
             migrationBuilder.DropTable(
+                name: "Articles");
+
+            migrationBuilder.DropTable(
                 name: "AspNetRoles");
 
             migrationBuilder.DropTable(
                 name: "AspNetUsers");
+
+            migrationBuilder.DropTable(
+                name: "Companies");
         }
     }
 }

@@ -20,7 +20,7 @@ namespace APBDproject.Server.Services
 
         public async Task<IEnumerable<CompanyDTO>> GetWatchedCompaniesAync(string userId)
         {
-            var user = await _context.Users.Where(user => user.Id == userId).SingleOrDefaultAsync();
+            var user = await _context.Users.Include(u => u.Companies).Where(user => user.Id == userId).SingleOrDefaultAsync();
 
             if (user == null) throw new KeyNotFoundException("User not found");
                 
@@ -35,7 +35,7 @@ namespace APBDproject.Server.Services
         
         public async Task<bool> AddCompanyToWatchlistAsync(string userId, string symbol)
         {
-            var user = await _context.Users.Where(u => u.Id == userId).SingleOrDefaultAsync();
+            var user = await _context.Users.Include(u => u.Companies).Where(u => u.Id == userId).SingleOrDefaultAsync();
             if (user == null) throw new KeyNotFoundException("User not found");
 
 
@@ -44,13 +44,15 @@ namespace APBDproject.Server.Services
 
             user.Companies.Add(company);
 
+            _context.Users.Update(user);
+
             await _context.SaveChangesAsync();
             return true;
         }
 
         public async Task<bool> RemoveCompanyFromWatchlistAsync(string userId, string symbol)
         {
-            var user = await _context.Users.Where(u => u.Id == userId).SingleOrDefaultAsync();
+            var user = await _context.Users.Include(u => u.Companies).Where(u => u.Id == userId).SingleOrDefaultAsync();
             if (user == null) throw new KeyNotFoundException("User not found");
 
             var company = user.Companies.Where(c => c.Symbol == symbol).SingleOrDefault();
@@ -64,7 +66,7 @@ namespace APBDproject.Server.Services
 
         public async Task<bool> IsOnWatchlistAsync(string userId, string symbol)
         {
-            var user = await _context.Users.Where(u => u.Id == userId).SingleOrDefaultAsync();
+            var user = await _context.Users.Include(u => u.Companies).Where(u => u.Id == userId).SingleOrDefaultAsync();
             if (user == null) return false;
             var company = user.Companies.Where(c => c.Symbol == symbol).SingleOrDefault();
             return company != null;

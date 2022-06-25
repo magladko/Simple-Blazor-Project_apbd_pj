@@ -1,95 +1,31 @@
 ﻿@page "/watchlist"
+@attribute [Authorize]
 @inject NavigationManager Navigation
 
-@*<SfGrid @ref="DefaultGrid" DataSource="@Orders" AllowPaging="true" Height="200">
-    <GridEvents OnLoad="Load" TValue="Order"></GridEvents>
-    <GridPageSettings PageCount="2"></GridPageSettings>
-    <GridColumns>
-        <GridColumn Field=@nameof(Order.OrderID) HeaderText="Order ID" TextAlign="TextAlign.Right" Width="120"></GridColumn>
-        <GridColumn Field=@nameof(Order.CustomerID) HeaderText="Customer Name" Width="150"></GridColumn>
-        <GridColumn Field=@nameof(Order.OrderDate) HeaderText=" Order Date" Format="d" Type="ColumnType.Date" TextAlign="TextAlign.Right" Width="130"></GridColumn>
-        <GridColumn Field=@nameof(Order.Freight) HeaderText="Freight" Visible="false" Format="C2" TextAlign="TextAlign.Right" Width="120"></GridColumn>
-    </GridColumns>
-</SfGrid>*@
-@*
-<SfGrid @ref="DefaultGrid" DataSource="@Companies" AllowPaging="true" AllowFiltering="true" AllowSorting="true" Height="500">
-    
+<SfGrid @ref="DefaultGrid" TValue="CompanyDTO" AllowPaging="true" AllowFiltering="true" AllowSorting="true" Toolbar="@(new List<string>() { "Delete" })">
+    <SfDataManager Url="api/watchlist" Adaptor="Adaptors.WebApiAdaptor"></SfDataManager>
     <GridFilterSettings Type ="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
     <GridEvents OnLoad="Load" TValue="CompanyDTO"></GridEvents>
     <GridPageSettings PageCount="4"></GridPageSettings>
+    <GridEditSettings AllowDeleting="true" Mode="EditMode.Normal"></GridEditSettings>
     <GridColumns>
-        <GridColumn Field=@nameof(CompanyDTO.Symbol) HeaderText="Symbol" TextAlign="TextAlign.Right" />
-        <GridColumn Field=@nameof(CompanyDTO.Name) HeaderText="Name" />
-        <GridColumn Field=@nameof(CompanyDTO.SicDescription) HeaderText="Description" Format="d" TextAlign="TextAlign.Left" />
-        <GridColumn Field=@nameof(CompanyDTO.Locale) HeaderText="Locale" Format="C2" TextAlign="TextAlign.Left"  />
-    </GridColumns>
-</SfGrid>*@
-
-<SfGrid @ref="DefaultGrid" TValue="CompanyDTO" AllowPaging="true" AllowFiltering="true" AllowSorting="true">
-    <SfDataManager Url=@(Navigation.BaseUri + "api/watchlist/all") Adaptor="Adaptors.WebApiAdaptor"></SfDataManager>
-    <GridFilterSettings Type ="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
-    <GridEvents OnLoad="Load" TValue="CompanyDTO"></GridEvents>
-    <GridPageSettings PageCount="4"></GridPageSettings>
-    <GridColumns>
-        <GridColumn Field=@nameof(CompanyDTO.Symbol) HeaderText="Symbol" TextAlign="TextAlign.Right" />
+        <GridColumn Field=@nameof(CompanyDTO.Symbol) HeaderText="Symbol" TextAlign="TextAlign.Right" IsPrimaryKey="true" IsIdentity="true">
+            <Template>
+                @{
+                    var ticker = (context as CompanyDTO);
+                    <div><a href="#" @onclick="@(() => Navigation.NavigateTo($"dashboard/{ticker.Symbol}", true))">@ticker.Symbol</a></div>
+                }
+            </Template>
+        </GridColumn>
         <GridColumn Field=@nameof(CompanyDTO.Name) HeaderText="Name" />
         <GridColumn Field=@nameof(CompanyDTO.SicDescription) HeaderText="Description" Format="d" TextAlign="TextAlign.Left" />
         <GridColumn Field=@nameof(CompanyDTO.Locale) HeaderText="Locale" Format="C2" TextAlign="TextAlign.Left"  />
     </GridColumns>
 </SfGrid>
 
-
 @code{
     private SfGrid<CompanyDTO> DefaultGrid;
     public int GridHeight;
-    public List<Order> Orders { get; set; }
-
-    public List<CompanyDTO> Companies;
-
-    protected override void OnInitialized()
-    {
-        Orders = Enumerable.Range(1, 75).Select(x => new Order()
-        {
-            OrderID = 1000 + x,
-            CustomerID = (new string[] { "ALFKI", "ANANTR", "ANTON", "BLONP", "BOLID" })[new Random().Next(5)],
-            Freight = 2.1 * x,
-            OrderDate = DateTime.Now.AddDays(-x),
-        }).ToList();
-
-        Companies = new List<CompanyDTO>()
-        {
-            new CompanyDTO { Symbol = "TSLA", Name = "Tesla Inc.", SicDescription = "Consumer Cyclical", Locale = "us" },
-            new CompanyDTO { Symbol = "AAPL", Name = "Apple Inc.", SicDescription = "Consumer Cyclical", Locale = "us" },
-            new CompanyDTO { Symbol = "MSFT", Name = "Microsoft Corporation", SicDescription = "Technology Conglomerate", Locale = "us" },
-            new CompanyDTO { Symbol = "GOOG", Name = "Google Inc.", SicDescription = "Consumer Cyclical", Locale = "us" },
-            new CompanyDTO { Symbol = "AMZN", Name = "Amazon.com Inc.", SicDescription = "Consumer Cyclical", Locale = "us" },
-            new CompanyDTO { Symbol = "FB", Name = "Facebook Inc.", SicDescription = "Consumer Cyclical", Locale = "us" },
-            new CompanyDTO { Symbol = "TWTR", Name = "Twitter Inc.", SicDescription = "Consumer Cyclical", Locale = "us" },
-            new CompanyDTO { Symbol = "NFLX", Name = "Netflix Inc.", SicDescription = "Consumer Cyclical", Locale = "us" },
-            new CompanyDTO { Symbol = "GILD", Name = "Gilead Sciences, Inc.", SicDescription = "Health Care", Locale = "us" },
-            new CompanyDTO { Symbol = "V", Name = "Visa Inc.", SicDescription = "Information Technology", Locale = "us" },
-            new CompanyDTO { Symbol = "INTC", Name = "Intel Corporation", SicDescription = "Technology Conglomerate", Locale = "us" },
-            new CompanyDTO { Symbol = "CSCO", Name = "Cisco Systems Inc.", SicDescription = "Information Technology", Locale = "us" },
-            new CompanyDTO { Symbol = "ORCL", Name = "Oracle Corporation", SicDescription = "Information Technology", Locale = "us" },
-            new CompanyDTO { Symbol = "AMAT", Name = "Applied Materials, Inc.", SicDescription = "Information Technology", Locale = "us" },
-            new CompanyDTO { Symbol = "QCOM", Name = "Qualcomm Inc.", SicDescription = "Information Technology", Locale = "us" },
-            new CompanyDTO { Symbol = "TXN", Name = "Texas Instruments Inc.", SicDescription = "Information Technology", Locale = "us" },
-            new CompanyDTO { Symbol = "ADBE", Name = "Adobe Systems Inc.", SicDescription = "Information Technology", Locale = "us" },
-            new CompanyDTO { Symbol = "ADP", Name = "Automatic Data Processing, Inc.", SicDescription = "Information Technology", Locale = "us" },
-            new CompanyDTO { Symbol = "AVGO", Name = "Broadcom Inc.", SicDescription = "Information Technology", Locale = "us" },
-            new CompanyDTO { Symbol = "BIDU", Name = "Baidu Inc.", SicDescription = "Information Technology", Locale = "us" },
-            new CompanyDTO { Symbol = "CMG", Name = "Chipotle Mexican Grill, Inc.", SicDescription = "Consumer Cyclical", Locale = "us" },
-            new CompanyDTO { Symbol = "CSCO", Name = "Cisco Systems Inc.", SicDescription = "Information Technology", Locale = "us" },
-        };
-    }
-
-    public class Order
-    {
-        public int? OrderID { get; set; }
-        public string CustomerID { get; set; }
-        public DateTime? OrderDate { get; set; }
-        public double? Freight { get; set; }
-    }
 
     public void Load(object args)
     {

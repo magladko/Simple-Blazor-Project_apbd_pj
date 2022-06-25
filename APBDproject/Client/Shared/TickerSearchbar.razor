@@ -34,7 +34,13 @@
 
     protected async Task SearchClicked()
     {
-        await OnSearchButtonClicked.InvokeAsync(SearchedTicker);
+        try
+        {
+            await OnSearchButtonClicked.InvokeAsync(SearchedTicker);
+        }
+        catch (Exception)
+        {
+        }
     }
 
 }
