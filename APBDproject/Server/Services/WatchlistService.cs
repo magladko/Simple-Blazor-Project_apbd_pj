@@ -23,14 +23,26 @@ namespace APBDproject.Server.Services
             var user = await _context.Users.Include(u => u.Companies).Where(user => user.Id == userId).SingleOrDefaultAsync();
 
             if (user == null) throw new KeyNotFoundException("User not found");
-                
+
+            //var order = orderBy.Split(" ")[0];
+            //if (orderBy.Split(" ").Length > 1)
+            //{
+            //    return user.Companies.Select(c => new CompanyDTO
+            //    {
+            //        Symbol = c.Symbol,
+            //        Name = c.Name,
+            //        Locale = c.Locale,
+            //        SicDescription = c.SicDescription
+            //    }).OrderByDescending(c => c.GetType().GetProperty(order).GetValue(c)).Skip(skip).Take(top == -1 ? user.Companies.Count : top);
+            //}
+
             return user.Companies.Select(c => new CompanyDTO
             {
                 Symbol = c.Symbol,
                 Name = c.Name,
                 Locale = c.Locale,
                 SicDescription = c.SicDescription
-            });
+            }); // .OrderBy(c => c.GetType().GetProperty(order).GetValue(c)).Skip(skip).Take(top == -1 ? user.Companies.Count : top);
         }
         
         public async Task<bool> AddCompanyToWatchlistAsync(string userId, string symbol)

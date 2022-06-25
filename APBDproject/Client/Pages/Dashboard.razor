@@ -1,4 +1,5 @@
-﻿@page "/dashboard/{SearchedTickerParam}"
+﻿@page "/dashboard"
+@page "/dashboard/{SearchedTickerParam}"
 @attribute [Authorize]
 @inject HttpClient http
 @inject NavigationManager navigation
@@ -7,78 +8,84 @@
 <div class="grid-container">
 
     <div class="title"><h3>Dashboard</h3></div>
-    <div class="logout"><LogoutButton /></div>
+    @*<div class="logout"><LogoutButton /></div>*@
 
-    <div class="search-bar"><TickerSearchbar OnSearchButtonClicked="SearchButtonClicked" /></div>
-    <div class="watch-list-btn"><WatchlistButton /></div>
-    <div class="add-watch-list-btn">
-        <AddToWatchlistButton Symbol="@SearchedTickerParam" @ref="addToWatchlist" />
-    </div>
-
-    @if (CompanyDisplayInfo != null)
+    <div class="search-bar"><TickerSearchbar SearchedTickerSymbol="@SearchedTickerParam" OnSearchButtonClicked="SearchButtonClicked" /></div>
+    @if (SearchedTickerParam == null)
     {
-        @*<div class="logo"><img src="@CompanyDisplayInfo.LogoUrl"></div>*@
-        <div class="name-symbol">@CompanyDisplayInfo.Name (@CompanyDisplayInfo.Symbol)</div>
-        <div class="locale">Locale: @CompanyDisplayInfo.Locale</div>
-        <div class="description">Description: @CompanyDisplayInfo.SicDescription</div>
-        <div class="home-url">Homepage: <a href="@CompanyDisplayInfo.HomepageUrl" target=”_blank”>@CompanyDisplayInfo.HomepageUrl</a></div>
+        <div class="choose-company-label">
+            <h3>CHOOSE COMPANY</h3>
+        </div>
     }
     else
     {
-        <LoadingGif />
-    }
+        <div class="add-watch-list-btn">
+            <AddToWatchlistButton Symbol="@SearchedTickerParam" @ref="addToWatchlist" />
+        </div>
 
-    <div class="stock-chart">
-        @if(StockData.Count() > 0)
+        @if (CompanyDisplayInfo != null)
         {
-            <StockChart OuterStockDetails="StockData" />
-        }
-        else if (!FailedToLoadChartData)
-        {
-            <LoadingGif />
+            @*<div class="logo"><img src="@CompanyDisplayInfo.LogoUrl"></div>*@
+            <div class="name-symbol">@CompanyDisplayInfo.Name (@CompanyDisplayInfo.Symbol)</div>
+            <div class="locale">Locale: @CompanyDisplayInfo.Locale</div>
+            <div class="description">Description: @CompanyDisplayInfo.SicDescription</div>
+            <div class="home-url">Homepage: <a href="@CompanyDisplayInfo.HomepageUrl" target=”_blank”>@CompanyDisplayInfo.HomepageUrl</a></div>
         }
         else
         {
-            <p>Couldn't load chart data, search again.</p>
+            <LoadingGif />
         }
-    </div>
 
-    @if (CompanyDisplayInfo != null)
-    {
-        <div class="daily">
-            <p>From: @CompanyDisplayInfo.Daily.From</p>
-            <p>Ticker: @CompanyDisplayInfo.Daily.Symbol</p>        
-            <p>Open: @CompanyDisplayInfo.Daily.Open</p>
-            <p>High: @CompanyDisplayInfo.Daily.High</p>        
-            <p>Low: @CompanyDisplayInfo.Daily.Low</p>
-            <p>Close: @CompanyDisplayInfo.Daily.Close</p>
-            <p>Volume: @CompanyDisplayInfo.Daily.Volume</p>
-            <p>Afterhours: @CompanyDisplayInfo.Daily.AfterHours</p>
-            <p>Premarket: @CompanyDisplayInfo.Daily.PreMarket</p>
-        </div>
-
-        <div class="articles">
-            <h3>Last 5 articles</h3>
-            @foreach (var article in CompanyDisplayInfo.Articles)
+        <div class="stock-chart">
+            @if(StockData.Count() > 0)
             {
-                <a href="@article.ArticleUrl">
-                    <div class="author-title">
-                        <p>@article.Author</p>
-                        <p>@article.Title</p>
-                    </div>
-                    <div class="article-date">
-                        <p>@article.PublishedUtc.ToString("dd-MM-yyyy")</p>
-                    </div>
-                </a>
+                <StockChart OuterStockDetails="StockData" />
+            }
+            else if (!FailedToLoadChartData)
+            {
+                <LoadingGif />
+            }
+            else
+            {
+                <p>Couldn't load chart data, search again.</p>
             }
         </div>
-    }
-    else
-    {
-        <LoadingGif />
-    }
-    
 
+        @if (CompanyDisplayInfo != null)
+        {
+            <div class="daily">
+                <div>From: @CompanyDisplayInfo.Daily.From.ToString("dd-MM-yyyy")</div>
+                <div>Ticker: @CompanyDisplayInfo.Daily.Symbol</div>
+                <div>Open: @CompanyDisplayInfo.Daily.Open</div>
+                <div>High: @CompanyDisplayInfo.Daily.High</div>
+                <div>Low: @CompanyDisplayInfo.Daily.Low</div>
+                <div>Close: @CompanyDisplayInfo.Daily.Close</div>
+                <div>Volume: @CompanyDisplayInfo.Daily.Volume</div>
+                <div>Afterhours: @CompanyDisplayInfo.Daily.AfterHours</div>
+                <div>Premarket: @CompanyDisplayInfo.Daily.PreMarket</div>
+            </div>
+
+            <div class="articles">
+                <h3>Last 5 articles</h3>
+                @foreach (var article in CompanyDisplayInfo.Articles)
+                {
+                    <a target="_blank" href="@article.ArticleUrl">
+                        <div class="author-title">
+                            <div>@article.Author</div>
+                            <div>@article.Title</div>
+                        </div>
+                        <div class="article-date">
+                            @article.PublishedUtc.ToString("dd-MM-yyyy")
+                        </div>
+                    </a>
+                }
+            </div>
+        }
+        else
+        {
+            @*<LoadingGif />*@
+        }
+    }
 </div>
 
 
@@ -91,10 +98,16 @@
 
     public MassiveCompanyDTO CompanyDisplayInfo { get; set; }
 
-    protected override async Task OnInitializedAsync()
+    //protected override async Task OnInitializedAsync()
+    //{
+    //    await PopulateData();
+    //    UpdateOnListParam();
+    //}
+
+    protected override async Task OnParametersSetAsync()
     {
+        //if (SearchedTickerParam != null) SearchButtonClicked(SearchedTickerParam);
         await PopulateData();
-        //UpdateOnListParam();
     }
 
     public async Task PopulateData()
@@ -125,17 +138,13 @@
                 V = d.V
             }).ToList());
         }
-        catch (Exception)
+        catch (Exception e)
         {
+            System.Diagnostics.Debug.WriteLine(e.Message);
             FailedToLoadChartData = true;
         }
 
-
-        //var test = await http.GetStringAsync($"api/tickers/details/{SearchedTickerParam}?articleLimit=5");
-
         CompanyDisplayInfo = JObject.Parse(await http.GetStringAsync($"api/tickers/details/{SearchedTickerParam}?articleLimit=5")).ToObject<MassiveCompanyDTO>();
-
-        //CompanyDisplayInfo = await http.GetFromJsonAsync<MassiveCompanyDTO>($"api/tickers/details/{SearchedTickerParam}?articleLimit=5");
 
         StateHasChanged();
 
@@ -155,15 +164,15 @@
 
     private void RefreshAddToWatchlistButton()
     {
-        addToWatchlist.WatchlistAction();
+        if (addToWatchlist != null) addToWatchlist.WatchlistAction();
     }
 
-    protected async void SearchButtonClicked(TickerModel ticker)
+    protected async void SearchButtonClicked(string ticker)
     {
         if (ticker == null) return;
-
-        navigation.NavigateTo($"/dashboard/{ticker.Ticker}");
+        navigation.NavigateTo($"/dashboard/{ticker}");
+        CompanyDisplayInfo = null;
         await PopulateData();
-        RefreshAddToWatchlistButton();
+        //RefreshAddToWatchlistButton();
     }
 }

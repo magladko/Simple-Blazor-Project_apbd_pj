@@ -5,3 +5,8 @@
 .ac-name {
     float: right;
 }
+
+label{
+    display: block;
+}
+

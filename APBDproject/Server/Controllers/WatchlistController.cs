@@ -3,6 +3,7 @@ using APBDproject.Shared.Models.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Primitives;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace APBDproject.Server.Controllers
 {
-    //[Authorize]
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class WatchlistController : ControllerBase
@@ -30,11 +31,11 @@ namespace APBDproject.Server.Controllers
             return await GetWatchedCompaniesToGridAsync();
         }
 
-        [HttpGet("{id}", Name = "Get")]
-        public string Get(int id)
-        {
-            return "value";
-        }
+        //[HttpGet("{id}", Name = "Get")]
+        //public string Get(int id)
+        //{
+        //    return "value";
+        //}
 
         [HttpDelete("{id}")]
         public async Task Delete(string id)
@@ -50,24 +51,35 @@ namespace APBDproject.Server.Controllers
             return await _watchlistService.IsOnWatchlistAsync(GetUserId(), symbol);
         }
 
-        //[HttpGet]
-        //[Route("getall")]
-        //public async Task<IEnumerable<CompanyDTO>> GetWatchedCompaniesAsync()
-        //{
-        //    //var id = GetUserId() == null ? "03119793-458e-46bf-a3ae-4f531567e698" : GetUserId(); // TODO: DELETE!
-        //    return await _watchlistService.GetWatchedCompaniesAync(GetUserId());
-        //}
-
         [HttpGet]
         [Route("all")]
-        public async Task<WatchedCompaniesDTO> GetWatchedCompaniesToGridAsync()
+        public async Task<object> GetWatchedCompaniesToGridAsync()
         {
-            var res = await _watchlistService.GetWatchedCompaniesAync(GetUserId()); ;
-            return new WatchedCompaniesDTO
+            var data = await _watchlistService.GetWatchedCompaniesAync(GetUserId());
+
+            var count = data.Count();
+            var queryString = Request.Query;
+            if (queryString.Keys.Contains("$inlinecount"))
             {
-                Items = res,
-                Count = res.Count()
-            };
+                StringValues Skip;
+                StringValues Take;
+                StringValues OrderBy;
+                int skip = (queryString.TryGetValue("$skip", out Skip)) ? Convert.ToInt32(Skip[0]) : 0;
+                int top = (queryString.TryGetValue("$top", out Take)) ? Convert.ToInt32(Take[0]) : count;
+                string orderBy = (queryString.TryGetValue("$orderby", out OrderBy)) ? OrderBy[0] : "Symbol";
+
+
+                if (orderBy.Split(" ").Length > 1)
+                {
+                    return new { Items = data.OrderByDescending(c => c.GetType().GetProperty(orderBy.Split(" ")[0]).GetValue(c)).Skip(skip).Take(top), Count = count };
+                }
+
+                return new { Items = data.OrderBy(c => c.GetType().GetProperty(orderBy).GetValue(c)).Skip(skip).Take(top), Count = count };
+            }
+            else
+            {
+                return data;
+            }
         }
 
         [HttpPost]

@@ -3,26 +3,27 @@
 
 <div class="col-lg-12 control-section">
     <div class="control-wrapper">
-        <label class="example-label">Company symbol</label><br />
-
-        <SfAutoComplete Width="50%" TValue="TickerModel" TItem="TickerModel" Placeholder="company symbol eg. AAPL" @bind-Value="@SearchedTicker">
-            <SfDataManager Url="api/tickers" Adaptor="Adaptors.WebApiAdaptor" CrossDomain="true" />
-            <AutoCompleteTemplates TItem="TickerModel">
-                <ItemTemplate>
-                    <div class="search-field">
-                        <span class='ac-symbol'>
-                            @((context as TickerModel).Ticker)
-                        </span>
-                        <span class='ac-name'>
-                            @((context as TickerModel).Name)
-                        </span>
-                    </div>
-                </ItemTemplate>
-            </AutoCompleteTemplates>
-            <AutoCompleteFieldSettings  Value="Ticker" />
-        </SfAutoComplete>
-        <button class="btn btn-primary" @onclick="SearchClicked">SEARCH</button>
-        
+        <label class="example-label">Company symbol</label>
+        <div class="label-search">
+            <SfAutoComplete @onkeypress="@(e => KeyPressed(e))" Width="50%" TValue="TickerModel" TItem="TickerModel" Placeholder="@SearchedTickerSymbol" @bind-Value="@SearchedTicker">
+                <SfDataManager Url="api/tickers" Adaptor="Adaptors.WebApiAdaptor" CrossDomain="true" />
+                <AutoCompleteTemplates TItem="TickerModel">
+                    <ItemTemplate>
+                        <div class="search-field">
+                            <span class='ac-symbol'>
+                                @((context as TickerModel).Ticker)
+                            </span>
+                            <span class='ac-name'>
+                                @((context as TickerModel).Name)
+                            </span>
+                        </div>
+                    </ItemTemplate>
+                </AutoCompleteTemplates>
+                <AutoCompleteFieldSettings  Value="Ticker" />
+            </SfAutoComplete>
+            <button class="btn btn-primary" @onclick="SearchClicked">SEARCH</button>
+            <WatchlistButton />
+        </div>
     </div>
 </div>
 
@@ -30,16 +31,33 @@
 
     public TickerModel SearchedTicker { get; set; }
     [Parameter]
-    public EventCallback<TickerModel> OnSearchButtonClicked { get; set; }
+    public EventCallback<string> OnSearchButtonClicked { get; set; }
+    [Parameter]
+    public string SearchedTickerSymbol { get; set; }
+
+    protected override Task OnInitializedAsync()
+    {
+        if (SearchedTickerSymbol == null) SearchedTickerSymbol = "company symbol eg. AAPL";
+        return base.OnInitializedAsync();
+    }
 
     protected async Task SearchClicked()
     {
         try
         {
-            await OnSearchButtonClicked.InvokeAsync(SearchedTicker);
+            await OnSearchButtonClicked.InvokeAsync(SearchedTicker.Ticker);
         }
         catch (Exception)
         {
+        }
+    }
+
+    public async Task KeyPressed(KeyboardEventArgs args)
+    {
+        Console.WriteLine(args.Key);
+        if (args.Key == "Enter")
+        {
+            await SearchClicked();
         }
     }
 

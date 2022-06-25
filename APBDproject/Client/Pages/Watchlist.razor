@@ -13,7 +13,7 @@
             <Template>
                 @{
                     var ticker = (context as CompanyDTO);
-                    <div><a href="#" @onclick="@(() => Navigation.NavigateTo($"dashboard/{ticker.Symbol}", true))">@ticker.Symbol</a></div>
+                    <span><a rel="nofollow" href="javascript:void(0);" @onclick="@(() => Navigation.NavigateTo($"dashboard/{ticker.Symbol}"))">@ticker.Symbol</a></span>
                 }
             </Template>
         </GridColumn>
